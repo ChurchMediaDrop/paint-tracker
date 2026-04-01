@@ -1,0 +1,4 @@
+{"type":"server-started","port":50293,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:50293","screen_dir":"/Users/bradzimmerman/Documents/Paint Tracker/.superpowers/brainstorm/16973-1775075694/content","state_dir":"/Users/bradzimmerman/Documents/Paint Tracker/.superpowers/brainstorm/16973-1775075694/state"}
+{"type":"screen-added","file":"/Users/bradzimmerman/Documents/Paint Tracker/.superpowers/brainstorm/16973-1775075694/content/app-layout.html"}
+{"type":"screen-added","file":"/Users/bradzimmerman/Documents/Paint Tracker/.superpowers/brainstorm/16973-1775075694/content/waiting.html"}
+{"type":"server-stopped","reason":"idle timeout"}

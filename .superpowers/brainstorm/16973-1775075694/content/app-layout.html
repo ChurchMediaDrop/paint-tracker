@@ -1,0 +1,107 @@
+<h2>Which app layout feels right?</h2>
+<p class="subtitle">This is the main navigation structure — how he moves between features</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 20px; background: #1a1a2e;">
+      <div style="background: #16213e; border-radius: 12px; overflow: hidden; max-width: 280px; margin: 0 auto;">
+        <!-- Phone mockup -->
+        <div style="background: #0f3460; padding: 12px 16px; color: #e94560; font-weight: 700; font-size: 18px; display: flex; justify-content: space-between; align-items: center;">
+          <span>Paint Tracker</span>
+          <span style="font-size: 12px; color: #999;">Today</span>
+        </div>
+        <!-- Today's jobs card -->
+        <div style="padding: 12px;">
+          <div style="background: #1a1a3e; border-radius: 8px; padding: 10px; margin-bottom: 8px; border-left: 3px solid #e94560;">
+            <div style="color: #fff; font-size: 13px; font-weight: 600;">9:00 AM — Johnson Interior</div>
+            <div style="color: #888; font-size: 11px;">3 rooms · Quoted $2,400</div>
+          </div>
+          <div style="background: #1a1a3e; border-radius: 8px; padding: 10px; margin-bottom: 8px; border-left: 3px solid #4ecca3;">
+            <div style="color: #fff; font-size: 13px; font-weight: 600;">2:00 PM — Garcia Estimate</div>
+            <div style="color: #888; font-size: 11px;">Exterior · New lead</div>
+          </div>
+        </div>
+        <!-- Bottom nav -->
+        <div style="display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #333; background: #0f3460;">
+          <div style="text-align: center;">
+            <div style="font-size: 18px;">📅</div>
+            <div style="color: #e94560; font-size: 9px; font-weight: 600;">Today</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 18px;">👥</div>
+            <div style="color: #888; font-size: 9px;">Customers</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 18px; background: #e94560; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: -10px auto 0;">➕</div>
+            <div style="color: #888; font-size: 9px; margin-top: 2px;">New</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 18px;">🧮</div>
+            <div style="color: #888; font-size: 9px;">Calculator</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 18px;">⚙️</div>
+            <div style="color: #888; font-size: 9px;">Settings</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A: Dashboard-First</h3>
+      <p>Opens to today's schedule. Bottom tab bar for navigation. Big "+" button to quickly add a job or quote. Everything is 1-2 taps away.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 20px; background: #1a1a2e;">
+      <div style="background: #16213e; border-radius: 12px; overflow: hidden; max-width: 280px; margin: 0 auto;">
+        <!-- Phone mockup -->
+        <div style="background: #0f3460; padding: 12px 16px; color: #4ecca3; font-weight: 700; font-size: 18px;">
+          Paint Tracker
+        </div>
+        <!-- Grid of big buttons -->
+        <div style="padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div style="background: #e94560; border-radius: 12px; padding: 20px 12px; text-align: center;">
+            <div style="font-size: 28px; margin-bottom: 6px;">📅</div>
+            <div style="color: #fff; font-size: 13px; font-weight: 600;">Schedule</div>
+            <div style="color: rgba(255,255,255,0.7); font-size: 10px;">2 jobs today</div>
+          </div>
+          <div style="background: #4ecca3; border-radius: 12px; padding: 20px 12px; text-align: center;">
+            <div style="font-size: 28px; margin-bottom: 6px;">👥</div>
+            <div style="color: #fff; font-size: 13px; font-weight: 600;">Customers</div>
+            <div style="color: rgba(255,255,255,0.7); font-size: 10px;">47 total</div>
+          </div>
+          <div style="background: #533483; border-radius: 12px; padding: 20px 12px; text-align: center;">
+            <div style="font-size: 28px; margin-bottom: 6px;">📝</div>
+            <div style="color: #fff; font-size: 13px; font-weight: 600;">New Quote</div>
+            <div style="color: rgba(255,255,255,0.7); font-size: 10px;">Start estimate</div>
+          </div>
+          <div style="background: #2b6777; border-radius: 12px; padding: 20px 12px; text-align: center;">
+            <div style="font-size: 28px; margin-bottom: 6px;">🧮</div>
+            <div style="color: #fff; font-size: 13px; font-weight: 600;">Calculator</div>
+            <div style="color: rgba(255,255,255,0.7); font-size: 10px;">Paint & labor</div>
+          </div>
+        </div>
+        <!-- Quick stats -->
+        <div style="padding: 0 16px 16px; display: flex; gap: 8px;">
+          <div style="flex:1; background: #1a1a3e; border-radius: 8px; padding: 10px; text-align: center;">
+            <div style="color: #4ecca3; font-size: 18px; font-weight: 700;">3</div>
+            <div style="color: #888; font-size: 9px;">Open Quotes</div>
+          </div>
+          <div style="flex:1; background: #1a1a3e; border-radius: 8px; padding: 10px; text-align: center;">
+            <div style="color: #e94560; font-size: 18px; font-weight: 700;">$4.2k</div>
+            <div style="color: #888; font-size: 9px;">This Month</div>
+          </div>
+          <div style="flex:1; background: #1a1a3e; border-radius: 8px; padding: 10px; text-align: center;">
+            <div style="color: #fff; font-size: 18px; font-weight: 700;">12</div>
+            <div style="color: #888; font-size: 9px;">Jobs Done</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B: Hub & Spoke</h3>
+      <p>Big colorful tiles on a home screen. Tap to go into each section. Quick stats at the bottom. Simple, no bottom nav — just tap and go, back button to return.</p>
+    </div>
+  </div>
+</div>
