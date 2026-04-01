@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
+import { Providers } from "@/components/Providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,7 +40,7 @@ export default function RootLayout({
       </head>
       <body className="h-full bg-black antialiased font-sans">
         <div className="mx-auto max-w-[430px] min-h-screen relative">
-          {children}
+          <Providers>{children}</Providers>
         </div>
       </body>
     </html>
