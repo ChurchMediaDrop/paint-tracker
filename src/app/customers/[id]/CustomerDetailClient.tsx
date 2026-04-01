@@ -4,8 +4,10 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
+import TemplatePicker from "@/components/TemplatePicker";
 import { useCustomer, updateCustomer, deleteCustomer } from "@/hooks/useCustomers";
 import { useJobs } from "@/hooks/useJobs";
+import { useQuote } from "@/hooks/useQuotes";
 import { formatDate, formatServiceType, formatJobStatus } from "@/lib/format";
 import { JobStatus } from "@/lib/types";
 
@@ -26,6 +28,10 @@ export default function CustomerDetailClient({ id }: CustomerDetailClientProps) 
   const router = useRouter();
   const customer = useCustomer(id);
   const jobs = useJobs({ customerId: id });
+
+  const mostRecentJob = jobs[0] ?? null;
+  const mostRecentQuote = useQuote(mostRecentJob?.id ?? "");
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
@@ -342,6 +348,19 @@ export default function CustomerDetailClient({ id }: CustomerDetailClientProps) 
           New Quote
         </Link>
 
+        {/* Send Message button */}
+        {mostRecentJob && (
+          <button
+            onClick={() => setShowTemplatePicker(true)}
+            className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 text-white font-semibold text-[15px] active:scale-[0.98] transition-transform shadow-lg shadow-blue-900/30"
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M3 2h12a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6l-4 3V3a1 1 0 0 1 1-1Z" stroke="white" strokeWidth="1.6" strokeLinejoin="round" fill="none"/>
+            </svg>
+            Send Message
+          </button>
+        )}
+
         {/* Delete Customer */}
         {!hasJobs && (
           <div className="mt-2">
@@ -376,6 +395,17 @@ export default function CustomerDetailClient({ id }: CustomerDetailClientProps) 
           </div>
         )}
       </div>
+
+      {/* Template Picker */}
+      {mostRecentJob && (
+        <TemplatePicker
+          open={showTemplatePicker}
+          onClose={() => setShowTemplatePicker(false)}
+          customer={customer}
+          job={mostRecentJob}
+          quote={mostRecentQuote ?? undefined}
+        />
+      )}
     </AppShell>
   );
 }

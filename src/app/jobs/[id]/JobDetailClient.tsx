@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import AppShell from "@/components/AppShell";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import TemplatePicker from "@/components/TemplatePicker";
 import StatusBadge from "@/components/StatusBadge";
 import { useJob, updateJob } from "@/hooks/useJobs";
 import { useQuote } from "@/hooks/useQuotes";
@@ -41,6 +42,7 @@ export default function JobDetailClient({ id }: JobDetailClientProps) {
 
   // Status progression confirm dialog
   const [confirmStatus, setConfirmStatus] = useState<JobStatus | null>(null);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
 
   // Actuals form
   const [actualHours, setActualHours] = useState("");
@@ -334,6 +336,19 @@ export default function JobDetailClient({ id }: JobDetailClientProps) {
           </div>
         )}
 
+        {/* ── Message Customer ── */}
+        {customer && (
+          <button
+            onClick={() => setShowTemplatePicker(true)}
+            className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 text-white font-semibold text-[15px] active:scale-[0.98] transition-transform shadow-lg shadow-blue-900/30"
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M3 2h12a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6l-4 3V3a1 1 0 0 1 1-1Z" stroke="white" strokeWidth="1.6" strokeLinejoin="round" fill="none"/>
+            </svg>
+            Message Customer
+          </button>
+        )}
+
         {/* ── Log Actuals ── */}
         {showActuals && (
           <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] px-4 py-4">
@@ -469,6 +484,17 @@ export default function JobDetailClient({ id }: JobDetailClientProps) {
         onConfirm={handleStatusAdvance}
         onCancel={() => setConfirmStatus(null)}
       />
+
+      {/* ── Template Picker ── */}
+      {customer && (
+        <TemplatePicker
+          open={showTemplatePicker}
+          onClose={() => setShowTemplatePicker(false)}
+          customer={customer}
+          job={job}
+          quote={quote ?? undefined}
+        />
+      )}
     </AppShell>
   );
 }

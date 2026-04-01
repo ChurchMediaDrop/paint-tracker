@@ -5,6 +5,7 @@ import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import RoomForm from "@/components/RoomForm";
 import QuoteSummary from "@/components/QuoteSummary";
+import TemplatePicker from "@/components/TemplatePicker";
 import {
   useQuoteById,
   useRooms,
@@ -30,6 +31,7 @@ export default function QuoteDetailClient({ id }: QuoteDetailClientProps) {
 
   const [showRoomForm, setShowRoomForm] = useState(false);
   const [deletingRoomId, setDeletingRoomId] = useState<string | null>(null);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
 
   async function handleRoomSave(roomData: Omit<Room, "id">) {
     await addRoom({ ...roomData, quoteId: id });
@@ -184,16 +186,31 @@ export default function QuoteDetailClient({ id }: QuoteDetailClientProps) {
           </div>
         )}
 
-        {/* Send Quote placeholder */}
-        {!showRoomForm && (
+        {/* Send Quote */}
+        {!showRoomForm && job && customer && (
           <button
-            disabled
-            className="w-full py-4 rounded-2xl bg-white/[0.06] border border-white/[0.08] text-white/40 font-medium text-[15px] cursor-not-allowed mt-2"
+            onClick={() => setShowTemplatePicker(true)}
+            className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 text-white font-semibold text-[15px] active:scale-[0.98] transition-transform shadow-lg shadow-blue-900/30 mt-2"
           >
-            Send Quote (Coming Soon)
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="2" y="4" width="14" height="10" rx="1.5" stroke="white" strokeWidth="1.6" fill="none"/>
+              <path d="M2 6l7 5 7-5" stroke="white" strokeWidth="1.6" strokeLinecap="round"/>
+            </svg>
+            Send Quote
           </button>
         )}
       </div>
+
+      {/* Template Picker */}
+      {job && customer && (
+        <TemplatePicker
+          open={showTemplatePicker}
+          onClose={() => setShowTemplatePicker(false)}
+          customer={customer}
+          job={job}
+          quote={quote ?? undefined}
+        />
+      )}
     </AppShell>
   );
 }
