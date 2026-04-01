@@ -1,0 +1,199 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import AppShell from "@/components/AppShell";
+import RoomForm from "@/components/RoomForm";
+import QuoteSummary from "@/components/QuoteSummary";
+import {
+  useQuoteById,
+  useRooms,
+  addRoom,
+  deleteRoom,
+  updateQuote,
+  recalculateQuoteTotals,
+} from "@/hooks/useQuotes";
+import { useJob } from "@/hooks/useJobs";
+import { useCustomer } from "@/hooks/useCustomers";
+import { formatServiceType } from "@/lib/format";
+import type { Room } from "@/lib/types";
+
+interface QuoteDetailClientProps {
+  id: string;
+}
+
+export default function QuoteDetailClient({ id }: QuoteDetailClientProps) {
+  const quote = useQuoteById(id);
+  const rooms = useRooms(id);
+  const job = useJob(quote?.jobId ?? "");
+  const customer = useCustomer(job?.customerId ?? "");
+
+  const [showRoomForm, setShowRoomForm] = useState(false);
+  const [deletingRoomId, setDeletingRoomId] = useState<string | null>(null);
+
+  async function handleRoomSave(roomData: Omit<Room, "id">) {
+    await addRoom({ ...roomData, quoteId: id });
+    await recalculateQuoteTotals(id);
+    setShowRoomForm(false);
+  }
+
+  async function handleDeleteRoom(roomId: string) {
+    setDeletingRoomId(roomId);
+    try {
+      await deleteRoom(roomId);
+      await recalculateQuoteTotals(id);
+    } finally {
+      setDeletingRoomId(null);
+    }
+  }
+
+  async function handleMarkupChange(percent: number) {
+    if (!quote) return;
+    await updateQuote(id, { markupPercent: percent });
+    await recalculateQuoteTotals(id);
+  }
+
+  async function handleLaborRateChange(rate: number) {
+    if (!quote) return;
+    await updateQuote(id, { laborRate: rate });
+    await recalculateQuoteTotals(id);
+  }
+
+  if (quote === undefined) {
+    return (
+      <AppShell showBack title="Quote">
+        <div className="flex items-center justify-center py-20">
+          <div className="w-6 h-6 rounded-full border-2 border-white/20 border-t-orange-400 animate-spin" />
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (quote === null) {
+    return (
+      <AppShell showBack title="Quote">
+        <div className="p-4 text-white/50 text-center py-16">Quote not found.</div>
+      </AppShell>
+    );
+  }
+
+  return (
+    <AppShell showBack title="Quote">
+      <div className="flex flex-col px-4 pb-28 pt-4 gap-4">
+
+        {/* Header info */}
+        <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] px-4 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              {customer && (
+                <p className="text-white font-semibold text-[17px] truncate">{customer.name}</p>
+              )}
+              {job && (
+                <p className="text-white/50 text-[14px] mt-0.5">
+                  {formatServiceType(job.serviceType)}
+                </p>
+              )}
+            </div>
+            {job && (
+              <Link
+                href={`/jobs/${job.id}`}
+                className="flex-shrink-0 text-blue-400 text-[14px] font-medium active:opacity-60 transition-opacity py-1"
+              >
+                View Job
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {/* Quote Summary */}
+        <QuoteSummary
+          quote={quote}
+          rooms={rooms}
+          onMarkupChange={handleMarkupChange}
+          onLaborRateChange={handleLaborRateChange}
+        />
+
+        {/* Room actions */}
+        {showRoomForm ? (
+          <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] px-4 py-4">
+            <h3 className="text-white font-semibold text-[15px] mb-4">New Room</h3>
+            {job && (
+              <RoomForm
+                serviceType={job.serviceType}
+                laborRate={quote.laborRate}
+                quoteId={id}
+                onSave={handleRoomSave}
+                onCancel={() => setShowRoomForm(false)}
+              />
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowRoomForm(true)}
+            className="flex items-center gap-3 w-full px-4 py-4 rounded-2xl bg-white/[0.06] border border-white/[0.08] border-dashed active:bg-white/10 transition-colors min-h-[60px]"
+          >
+            <div className="w-9 h-9 rounded-full bg-orange-500/15 flex items-center justify-center flex-shrink-0">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-orange-400" aria-hidden="true">
+                <path d="M7 2V12M2 7H12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <span className="text-orange-400 font-medium text-[15px]">Add Room / Area</span>
+          </button>
+        )}
+
+        {/* Remove rooms controls */}
+        {!showRoomForm && rooms.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <p className="text-white/40 text-[12px] font-semibold uppercase tracking-widest">Manage Rooms</p>
+            {rooms.map((room) => {
+              const total = (room.materialCost || room.manualCost || 0) + (room.laborCost || 0);
+              return (
+                <div
+                  key={room.id}
+                  className="rounded-2xl bg-white/[0.06] border border-white/[0.08] px-4 py-3.5 flex items-center justify-between gap-3"
+                >
+                  <div className="min-w-0">
+                    <p className="text-white text-[14px] font-medium truncate">{room.name}</p>
+                    <p className="text-white/40 text-[12px] mt-0.5">
+                      {formatServiceType(room.serviceType)}
+                      {room.paintColor && ` · ${room.paintColor}`}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span className="text-white text-[14px] font-semibold">
+                      {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(total)}
+                    </span>
+                    <button
+                      onClick={() => handleDeleteRoom(room.id)}
+                      disabled={deletingRoomId === room.id}
+                      className="w-8 h-8 flex items-center justify-center rounded-full bg-rose-500/15 border border-rose-500/20 text-rose-400 active:bg-rose-500/30 transition-colors disabled:opacity-50"
+                      aria-label="Remove room"
+                    >
+                      {deletingRoomId === room.id ? (
+                        <div className="w-3 h-3 rounded-full border border-rose-400/40 border-t-rose-400 animate-spin" />
+                      ) : (
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                          <path d="M1 1L11 11M11 1L1 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Send Quote placeholder */}
+        {!showRoomForm && (
+          <button
+            disabled
+            className="w-full py-4 rounded-2xl bg-white/[0.06] border border-white/[0.08] text-white/40 font-medium text-[15px] cursor-not-allowed mt-2"
+          >
+            Send Quote (Coming Soon)
+          </button>
+        )}
+      </div>
+    </AppShell>
+  );
+}
