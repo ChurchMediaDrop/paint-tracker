@@ -463,6 +463,62 @@ function AddTemplateForm({ onDone }: { onDone: () => void }) {
   );
 }
 
+// ─── Google Calendar Section ──────────────────────────────────────────────────
+function GoogleCalendarSection() {
+  const settings = useSettings();
+
+  return (
+    <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] px-4 py-4">
+      <h2 className="text-white/60 text-[12px] font-semibold uppercase tracking-widest mb-3">
+        Google Calendar
+      </h2>
+      {settings?.googleCalendarConnected ? (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span className="text-white text-[14px]">Connected</span>
+          </div>
+          <button
+            onClick={async () => {
+              await db.appSettings.update("default", {
+                googleCalendarConnected: false,
+                googleCalendarToken: "",
+              });
+            }}
+            className="text-rose-400 text-[14px] font-medium active:opacity-60 transition-opacity py-1 px-2 min-h-[44px] flex items-center"
+          >
+            Disconnect
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={async () => {
+            try {
+              const { requestAccessToken } = await import("@/lib/google-calendar");
+              const tokenResponse = await requestAccessToken();
+              await db.appSettings.update("default", {
+                googleCalendarConnected: true,
+                googleCalendarToken: JSON.stringify(tokenResponse),
+              });
+            } catch (err) {
+              console.error("Google Calendar auth failed:", err);
+            }
+          }}
+          disabled={!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}
+          className="w-full py-4 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white font-semibold text-[15px] active:scale-[0.98] transition-transform disabled:opacity-40 shadow-lg shadow-blue-900/30"
+        >
+          Connect Google Calendar
+        </button>
+      )}
+      {!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+        <p className="text-white/30 text-[12px] mt-2">
+          Set NEXT_PUBLIC_GOOGLE_CLIENT_ID in .env.local to enable
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ─── Cloud Sync Section ───────────────────────────────────────────────────────
 function CloudSyncSection() {
   const syncStatus = useSyncStatus();
@@ -690,20 +746,7 @@ export default function SettingsPage() {
 
         {/* ── Google Calendar ── */}
         <SectionHeader title="Google Calendar" />
-        <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] px-4 py-4 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-white text-[15px] font-medium">Google Calendar</p>
-            <p className="text-white/40 text-[13px] mt-0.5">Not connected</p>
-          </div>
-          <button
-            disabled
-            className="px-4 py-2 rounded-xl bg-white/[0.06] border border-white/[0.08] text-white/30 font-medium text-[14px] cursor-not-allowed"
-            title="Coming soon"
-          >
-            Connect
-          </button>
-        </div>
-        <p className="text-white/30 text-[12px] text-center -mt-1">Google Calendar integration coming soon</p>
+        <GoogleCalendarSection />
 
         {/* ── Backup & Restore ── */}
         <SectionHeader title="Backup & Restore" />
