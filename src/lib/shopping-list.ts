@@ -12,29 +12,84 @@ export interface ShoppingListItem {
   totalCost: number;
 }
 
-export function aggregateShoppingList(rooms: Room[]): ShoppingListItem[] {
-  const paintRooms = rooms.filter(
-    (r) => (r.serviceType === ServiceType.InteriorPaint || r.serviceType === ServiceType.ExteriorPaint) && r.paintColor && r.gallonsNeeded > 0
-  );
+interface PaintEntry {
+  paintColor: string;
+  paintBrand: string;
+  finishType: FinishType;
+  rawGallons: number;
+  pricePerGallon: number;
+}
 
-  const groups = new Map<string, Room[]>();
-  for (const room of paintRooms) {
-    const key = `${room.paintColor}|${room.finishType}|${room.paintBrand}`;
-    const existing = groups.get(key) ?? [];
-    existing.push(room);
-    groups.set(key, existing);
+function extractPaintEntries(room: Room): PaintEntry[] {
+  const entries: PaintEntry[] = [];
+
+  // Wall paint
+  if (room.paintColor && room.finishType && room.gallonsNeeded > 0) {
+    entries.push({
+      paintColor: room.paintColor,
+      paintBrand: room.paintBrand,
+      finishType: room.finishType,
+      rawGallons: room.gallonsNeeded,
+      pricePerGallon: room.pricePerGallon ?? 0,
+    });
   }
 
-  return Array.from(groups.entries()).map(([, groupRooms]) => {
-    const first = groupRooms[0];
-    const totalGallons = groupRooms.reduce((sum, r) => sum + r.gallonsNeeded, 0);
+  // Ceiling paint
+  if (room.ceilingColor && room.ceilingFinish) {
+    const ceilingGallons = (room as any).ceilingGallonsNeeded ?? 0;
+    if (ceilingGallons > 0) {
+      entries.push({
+        paintColor: room.ceilingColor,
+        paintBrand: room.ceilingBrand,
+        finishType: room.ceilingFinish,
+        rawGallons: ceilingGallons,
+        pricePerGallon: room.ceilingPricePerGallon ?? 0,
+      });
+    }
+  }
+
+  // Trim/door paint
+  if ((room.includeTrim || room.includeDoors) && room.trimColor && room.trimFinish) {
+    const trimGallons = (room as any).trimGallonsNeeded ?? 0;
+    if (trimGallons > 0) {
+      entries.push({
+        paintColor: room.trimColor,
+        paintBrand: room.trimBrand,
+        finishType: room.trimFinish,
+        rawGallons: trimGallons,
+        pricePerGallon: room.trimPricePerGallon ?? 0,
+      });
+    }
+  }
+
+  return entries;
+}
+
+export function aggregateShoppingList(rooms: Room[]): ShoppingListItem[] {
+  const paintRooms = rooms.filter(
+    (r) => r.serviceType === ServiceType.InteriorPaint || r.serviceType === ServiceType.ExteriorPaint
+  );
+
+  const groups = new Map<string, PaintEntry[]>();
+  for (const room of paintRooms) {
+    for (const entry of extractPaintEntries(room)) {
+      const key = `${entry.paintColor}|${entry.finishType}|${entry.paintBrand}`;
+      const existing = groups.get(key) ?? [];
+      existing.push(entry);
+      groups.set(key, existing);
+    }
+  }
+
+  return Array.from(groups.entries()).map(([, groupEntries]) => {
+    const first = groupEntries[0];
+    const totalGallons = groupEntries.reduce((sum, e) => sum + e.rawGallons, 0);
     const purchaseGallons = roundToNearestQuarterGallon(totalGallons);
-    const pricePerGallon = first.pricePerGallon ?? 0;
+    const pricePerGallon = first.pricePerGallon;
 
     return {
       paintColor: first.paintColor,
       paintBrand: first.paintBrand,
-      finishType: first.finishType!,
+      finishType: first.finishType,
       totalGallons,
       purchaseGallons,
       purchaseRecommendation: recommendPurchaseSize(purchaseGallons),
