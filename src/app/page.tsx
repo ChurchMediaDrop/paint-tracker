@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
 import { JobStatus } from "@/lib/types";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatServiceType } from "@/lib/format";
 import AppShell from "@/components/AppShell";
 
 function ScheduleIcon() {
@@ -139,6 +139,69 @@ export default function HomePage() {
     ).length;
   }, [monthStart, monthEnd], 0);
 
+  // Pipeline counts
+  const leadCount = useLiveQuery(
+    () => db.jobs.where("status").equals(JobStatus.Lead).count(),
+    [], 0
+  );
+
+  const needsSchedulingCount = useLiveQuery(async () => {
+    const activeStatuses = [JobStatus.Lead, JobStatus.Quoted, JobStatus.Scheduled, JobStatus.InProgress];
+    const jobs = await db.jobs.where("status").anyOf(activeStatuses).toArray();
+    return jobs.filter((j) => !j.scheduledDate).length;
+  }, [], 0);
+
+  // Pipeline preview names (up to 3 per card)
+  const leadPreviews = useLiveQuery(async () => {
+    const jobs = await db.jobs.where("status").equals(JobStatus.Lead).limit(3).toArray();
+    const names: string[] = [];
+    for (const job of jobs) {
+      const c = await db.customers.get(job.customerId);
+      if (c) names.push(c.name);
+    }
+    return names;
+  }, [], []);
+
+  const quotedPreviews = useLiveQuery(async () => {
+    const jobs = await db.jobs.where("status").equals(JobStatus.Quoted).limit(3).toArray();
+    const names: string[] = [];
+    for (const job of jobs) {
+      const c = await db.customers.get(job.customerId);
+      if (c) names.push(c.name);
+    }
+    return names;
+  }, [], []);
+
+  const needsSchedulingPreviews = useLiveQuery(async () => {
+    const activeStatuses = [JobStatus.Lead, JobStatus.Quoted, JobStatus.Scheduled, JobStatus.InProgress];
+    const jobs = await db.jobs.where("status").anyOf(activeStatuses).toArray();
+    const unscheduled = jobs.filter((j) => !j.scheduledDate).slice(0, 3);
+    const names: string[] = [];
+    for (const job of unscheduled) {
+      const c = await db.customers.get(job.customerId);
+      if (c) names.push(c.name);
+    }
+    return names;
+  }, [], []);
+
+  // Today's schedule
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+
+  const todayJobs = useLiveQuery(async () => {
+    const jobs = await db.jobs
+      .where("scheduledDate")
+      .between(todayStart, todayEnd, true, false)
+      .toArray();
+    const withCustomer = await Promise.all(
+      jobs.sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate)).map(async (job) => {
+        const customer = await db.customers.get(job.customerId);
+        return { job, customerName: customer?.name ?? "Unknown" };
+      })
+    );
+    return withCustomer;
+  }, [todayStart, todayEnd], []);
+
   const monthName = now.toLocaleString("en-US", { month: "long" });
 
   return (
@@ -181,6 +244,60 @@ export default function HomePage() {
           </Link>
         </div>
 
+        {/* Pipeline Cards */}
+        <div className="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4 mb-4">
+          {[
+            {
+              label: "Leads",
+              count: leadCount ?? 0,
+              previews: leadPreviews ?? [],
+              gradient: "from-amber-500/15 to-amber-600/5",
+              border: "border-amber-500/20",
+              badge: "bg-amber-500/20 text-amber-300",
+              href: "/jobs?status=lead",
+            },
+            {
+              label: "Quoted",
+              count: openQuotesCount ?? 0,
+              previews: quotedPreviews ?? [],
+              gradient: "from-blue-500/15 to-blue-600/5",
+              border: "border-blue-500/20",
+              badge: "bg-blue-500/20 text-blue-300",
+              href: "/jobs?status=quoted",
+            },
+            {
+              label: "Needs Scheduling",
+              count: needsSchedulingCount ?? 0,
+              previews: needsSchedulingPreviews ?? [],
+              gradient: "from-rose-500/15 to-rose-600/5",
+              border: "border-rose-500/20",
+              badge: "bg-rose-500/20 text-rose-300",
+              href: "/jobs?unscheduled=true",
+            },
+          ].map((card) => (
+            <Link
+              key={card.label}
+              href={card.href}
+              className={`flex-shrink-0 w-[160px] rounded-2xl bg-gradient-to-br ${card.gradient} border ${card.border} p-4 active:scale-[0.97] transition-transform`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-white/60 text-[12px] font-semibold">{card.label}</span>
+                <span className={`text-[12px] font-bold px-2 py-0.5 rounded-full ${card.badge}`}>
+                  {card.count}
+                </span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                {card.previews.slice(0, 3).map((name, i) => (
+                  <p key={i} className="text-white/50 text-[12px] truncate">{name}</p>
+                ))}
+                {card.count === 0 && (
+                  <p className="text-white/25 text-[12px]">None</p>
+                )}
+              </div>
+            </Link>
+          ))}
+        </div>
+
         {/* Navigation tiles — 2x2 grid */}
         <div className="grid grid-cols-2 gap-3">
           {TILES.map((tile) => (
@@ -218,6 +335,54 @@ export default function HomePage() {
               </div>
             </Link>
           ))}
+        </div>
+
+        {/* Today's Schedule */}
+        <div className="mt-4 rounded-3xl bg-white/[0.06] border border-white/[0.08] overflow-hidden">
+          <div className="px-4 pt-4 pb-2 flex items-center justify-between">
+            <h2 className="text-white/60 text-[12px] font-semibold uppercase tracking-widest">
+              Today
+            </h2>
+            <Link
+              href="/schedule"
+              className="text-blue-400 text-[13px] font-medium active:opacity-60 transition-opacity"
+            >
+              Full schedule
+            </Link>
+          </div>
+          {(!todayJobs || todayJobs.length === 0) ? (
+            <div className="px-4 py-6 text-center">
+              <p className="text-white/30 text-[14px]">Nothing scheduled for today</p>
+            </div>
+          ) : (
+            <div className="flex flex-col divide-y divide-white/[0.06]">
+              {todayJobs.map(({ job, customerName }) => (
+                <Link
+                  key={job.id}
+                  href={`/jobs/${job.id}`}
+                  className="flex items-center gap-3 px-4 py-3.5 active:bg-white/[0.04] transition-colors"
+                >
+                  <div className="flex-shrink-0 w-14">
+                    <span className="text-white/50 text-[12px] font-medium">
+                      {job.scheduledDate
+                        ? new Date(job.scheduledDate).toLocaleTimeString("en-US", {
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })
+                        : "—"}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-[14px] font-medium truncate">{customerName}</p>
+                    <p className="text-white/40 text-[12px]">{formatServiceType(job.serviceType)}</p>
+                  </div>
+                  <svg width="7" height="12" viewBox="0 0 7 12" fill="none" className="text-white/20 flex-shrink-0" aria-hidden="true">
+                    <path d="M1 1L6 6L1 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Quick stats bar */}
