@@ -2,6 +2,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { v4 as uuid } from "uuid";
 import { db } from "@/lib/db";
 import type { Customer } from "@/lib/types";
+import { scheduleSyncDebounced } from "@/lib/sync";
 
 export function useCustomers(searchQuery?: string) {
   const customers = useLiveQuery(async () => {
@@ -31,6 +32,7 @@ export async function createCustomer(
   const now = new Date().toISOString();
   const id = uuid();
   await db.customers.add({ ...data, id, createdAt: now, updatedAt: now });
+  scheduleSyncDebounced();
   return id;
 }
 
@@ -42,8 +44,10 @@ export async function updateCustomer(
     ...data,
     updatedAt: new Date().toISOString(),
   });
+  scheduleSyncDebounced();
 }
 
 export async function deleteCustomer(id: string): Promise<void> {
   await db.customers.delete(id);
+  scheduleSyncDebounced();
 }

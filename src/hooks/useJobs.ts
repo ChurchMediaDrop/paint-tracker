@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import type { Job } from "@/lib/types";
 import { JobStatus, CalendarOperation } from "@/lib/types";
 import { queueCalendarEvent } from "@/hooks/useCalendarSync";
+import { scheduleSyncDebounced } from "@/lib/sync";
 
 export function useJobs(filters?: { customerId?: string; status?: JobStatus }) {
   const jobs = useLiveQuery(async () => {
@@ -54,6 +55,7 @@ export async function createJob(
     });
   }
 
+  scheduleSyncDebounced();
   return id;
 }
 
@@ -81,6 +83,7 @@ export async function updateJob(
       });
     }
   }
+  scheduleSyncDebounced();
 }
 
 export async function deleteJob(id: string): Promise<void> {
@@ -102,4 +105,5 @@ export async function deleteJob(id: string): Promise<void> {
       });
     }
   }
+  scheduleSyncDebounced();
 }
