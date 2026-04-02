@@ -87,6 +87,8 @@ export class PaintTrackerDB extends Dexie {
         if (record.trimBrand === undefined) record.trimBrand = "";
         if (record.trimFinish === undefined) record.trimFinish = null;
         if (record.trimPricePerGallon === undefined) record.trimPricePerGallon = null;
+        if (record.ceilingGallonsNeeded === undefined) record.ceilingGallonsNeeded = 0;
+        if (record.trimGallonsNeeded === undefined) record.trimGallonsNeeded = 0;
       });
     });
   }

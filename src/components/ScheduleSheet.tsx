@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
 import { updateJob } from "@/hooks/useJobs";
@@ -72,9 +73,9 @@ export default function ScheduleSheet({
             {(!unscheduledJobs || unscheduledJobs.length === 0) ? (
               <div className="flex flex-col items-center gap-2 py-8">
                 <p className="text-white/40 text-[15px]">No unscheduled jobs</p>
-                <a href="/quotes/new" className="text-orange-400 text-[14px] font-medium">
+                <Link href="/quotes/new" className="text-orange-400 text-[14px] font-medium">
                   Create a new job
-                </a>
+                </Link>
               </div>
             ) : (
               <div className="flex flex-col gap-1">

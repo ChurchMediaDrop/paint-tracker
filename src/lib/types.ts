@@ -131,6 +131,8 @@ export interface Room {
   trimPricePerGallon: number | null;
   paintableSqFt: number;
   gallonsNeeded: number;
+  ceilingGallonsNeeded: number;
+  trimGallonsNeeded: number;
   estimatedLaborHours: number;
   materialCost: number;
   laborCost: number;

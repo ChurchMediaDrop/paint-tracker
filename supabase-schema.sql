@@ -65,6 +65,8 @@ create table rooms (
   trim_brand TEXT DEFAULT '',
   trim_finish TEXT,
   trim_price_per_gallon REAL,
+  ceiling_gallons_needed REAL DEFAULT 0,
+  trim_gallons_needed REAL DEFAULT 0,
   paintable_sq_ft numeric not null default 0,
   gallons_needed numeric not null default 0,
   estimated_labor_hours numeric not null default 0,

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { aggregateShoppingList, recommendPurchaseSize } from "@/lib/shopping-list";
 import { ServiceType, RoomType, SurfaceType, FinishType, type Room } from "@/lib/types";
 
-function makeRoom(overrides: Partial<Room> & { [key: string]: any }): Room {
+function makeRoom(overrides: Partial<Room>): Room {
   return {
     id: "r1", quoteId: "q1", name: "Test Room", serviceType: ServiceType.InteriorPaint,
     roomType: RoomType.Walls, length: 12, width: 10, height: 8, doorCount: 1, windowCount: 2,
@@ -13,7 +13,9 @@ function makeRoom(overrides: Partial<Room> & { [key: string]: any }): Room {
     manualCost: null, sortOrder: 0,
     includeTrim: false, includeDoors: false,
     ceilingColor: "", ceilingBrand: "", ceilingFinish: null, ceilingPricePerGallon: null,
+    ceilingGallonsNeeded: 0,
     trimColor: "", trimBrand: "", trimFinish: null, trimPricePerGallon: null,
+    trimGallonsNeeded: 0,
     updatedAt: new Date().toISOString(),
     ...overrides,
   };

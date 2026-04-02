@@ -64,15 +64,18 @@ function deriveChecks(roomType: RoomType): { walls: boolean; ceiling: boolean } 
     case RoomType.Ceiling:
       return { walls: false, ceiling: true };
     case RoomType.Walls:
-    default:
       return { walls: true, ceiling: false };
+    case RoomType.Other:
+    default:
+      return { walls: false, ceiling: false };
   }
 }
 
 function deriveRoomType(walls: boolean, ceiling: boolean): RoomType {
   if (walls && ceiling) return RoomType.WallsAndCeiling;
   if (ceiling) return RoomType.Ceiling;
-  return RoomType.Walls;
+  if (walls) return RoomType.Walls;
+  return RoomType.Other;
 }
 
 export default function RoomForm({
@@ -249,6 +252,8 @@ export default function RoomForm({
         trimPricePerGallon: parsedTrimPPG,
         paintableSqFt,
         gallonsNeeded,
+        ceilingGallonsNeeded: estimates?.ceiling?.rawGallons ?? 0,
+        trimGallonsNeeded: (estimates?.trim?.rawGallons ?? 0) + (estimates?.doors?.rawGallons ?? 0),
         estimatedLaborHours,
         materialCost,
         laborCost,
@@ -293,6 +298,8 @@ export default function RoomForm({
         trimPricePerGallon: null,
         paintableSqFt: 0,
         gallonsNeeded: 0,
+        ceilingGallonsNeeded: 0,
+        trimGallonsNeeded: 0,
         estimatedLaborHours: parsedManualHours ?? 0,
         materialCost: parsedManualCost ?? 0,
         laborCost: (parsedManualHours ?? 0) * laborRate,

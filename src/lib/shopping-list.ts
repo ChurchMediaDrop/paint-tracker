@@ -36,7 +36,7 @@ function extractPaintEntries(room: Room): PaintEntry[] {
 
   // Ceiling paint
   if (room.ceilingColor && room.ceilingFinish) {
-    const ceilingGallons = (room as any).ceilingGallonsNeeded ?? 0;
+    const ceilingGallons = room.ceilingGallonsNeeded ?? 0;
     if (ceilingGallons > 0) {
       entries.push({
         paintColor: room.ceilingColor,
@@ -50,7 +50,7 @@ function extractPaintEntries(room: Room): PaintEntry[] {
 
   // Trim/door paint
   if ((room.includeTrim || room.includeDoors) && room.trimColor && room.trimFinish) {
-    const trimGallons = (room as any).trimGallonsNeeded ?? 0;
+    const trimGallons = room.trimGallonsNeeded ?? 0;
     if (trimGallons > 0) {
       entries.push({
         paintColor: room.trimColor,
