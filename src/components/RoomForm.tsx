@@ -15,6 +15,7 @@ import {
   calculateRoomCost,
   roundToNearestQuarterGallon,
 } from "@/lib/paint-calculator";
+import { calculateComponentEstimates } from "@/lib/component-calculator";
 import { formatCurrency, formatSurfaceType, formatFinishType } from "@/lib/format";
 import { usePaintPresets } from "@/hooks/useSettings";
 
@@ -103,6 +104,22 @@ export default function RoomForm({
   const [coats, setCoats] = useState(editRoom?.coats?.toString() ?? "2");
   const [pricePerGallon, setPricePerGallon] = useState(editRoom?.pricePerGallon?.toString() ?? "45");
 
+  // Trim/door toggle state
+  const [includeTrim, setIncludeTrim] = useState(editRoom?.includeTrim ?? false);
+  const [includeDoors, setIncludeDoors] = useState(editRoom?.includeDoors ?? false);
+
+  // Ceiling paint state
+  const [ceilingColor, setCeilingColor] = useState(editRoom?.ceilingColor ?? "White");
+  const [ceilingBrand, setCeilingBrand] = useState(editRoom?.ceilingBrand ?? "");
+  const [ceilingFinish, setCeilingFinish] = useState<FinishType>(editRoom?.ceilingFinish ?? FinishType.Flat);
+  const [ceilingPricePerGallon, setCeilingPricePerGallon] = useState(editRoom?.ceilingPricePerGallon?.toString() ?? "45");
+
+  // Trim/door paint state
+  const [trimColor, setTrimColor] = useState(editRoom?.trimColor ?? "");
+  const [trimBrand, setTrimBrand] = useState(editRoom?.trimBrand ?? "");
+  const [trimFinish, setTrimFinish] = useState<FinishType>(editRoom?.trimFinish ?? FinishType.SemiGloss);
+  const [trimPricePerGallon, setTrimPricePerGallon] = useState(editRoom?.trimPricePerGallon?.toString() ?? "50");
+
   // Non-paint mode state
   const [description, setDescription] = useState(editRoom?.description ?? "");
   const [manualHours, setManualHours] = useState(editRoom?.manualHours?.toString() ?? "");
@@ -118,6 +135,14 @@ export default function RoomForm({
   const coverageRate = surfacePreset?.coverageRate ?? 350;
   const presetLaborRate = surfacePreset?.laborRate ?? 200;
 
+  const ceilingPreset = paintPresets.find((p) => p.surfaceType === SurfaceType.Ceiling);
+  const ceilingCoverageRate = ceilingPreset?.coverageRate ?? 400;
+  const ceilingLaborRate = ceilingPreset?.laborRate ?? 250;
+
+  const trimPreset = paintPresets.find((p) => p.surfaceType === SurfaceType.TrimBaseboard);
+  const trimCoverageRate = trimPreset?.coverageRate ?? 300;
+  const trimLaborRate = trimPreset?.laborRate ?? 150;
+
   // Live calculations
   const parsedLength = parseFloat(length) || null;
   const parsedWidth = parseFloat(width) || null;
@@ -127,9 +152,37 @@ export default function RoomForm({
   const parsedCoats = parseInt(coats, 10) || 1;
   const parsedPricePerGallon = parseFloat(pricePerGallon) || 0;
 
-  const paintableSqFt = isPaint
+  const parsedCeilingPPG = parseFloat(ceilingPricePerGallon) || 0;
+  const parsedTrimPPG = parseFloat(trimPricePerGallon) || 0;
+
+  const estimates = isPaint && !isExterior
+    ? calculateComponentEstimates({
+        length: parsedLength,
+        width: parsedWidth,
+        height: parsedHeight,
+        doorCount: parsedDoors,
+        windowCount: parsedWindows,
+        coats: parsedCoats,
+        includeWalls,
+        includeCeiling,
+        includeTrim,
+        includeDoors,
+        wallCoverageRate: coverageRate,
+        wallLaborRate: presetLaborRate,
+        wallPricePerGallon: parsedPricePerGallon,
+        ceilingCoverageRate,
+        ceilingLaborRate,
+        ceilingPricePerGallon: parsedCeilingPPG,
+        trimCoverageRate,
+        trimLaborRate,
+        trimPricePerGallon: parsedTrimPPG,
+      })
+    : null;
+
+  // For exterior, keep single-surface calculation
+  const exteriorSqFt = isPaint && isExterior
     ? calculatePaintableArea({
-        roomType,
+        roomType: RoomType.Exterior,
         length: parsedLength,
         width: parsedWidth,
         height: parsedHeight,
@@ -137,24 +190,18 @@ export default function RoomForm({
         windowCount: parsedWindows,
       })
     : 0;
-
-  const gallonsRaw = isPaint
-    ? calculateGallonsNeeded(paintableSqFt, parsedCoats, coverageRate)
-    : 0;
-  const gallonsNeeded = roundToNearestQuarterGallon(gallonsRaw);
-
-  const estimatedLaborHours = isPaint
-    ? calculateLaborHours(paintableSqFt, parsedCoats, presetLaborRate)
-    : 0;
-
-  const { materialCost, laborCost } = isPaint
-    ? calculateRoomCost({
-        gallonsNeeded,
-        pricePerGallon: parsedPricePerGallon,
-        laborHours: estimatedLaborHours,
-        laborRate,
-      })
+  const exteriorGallonsRaw = isExterior ? calculateGallonsNeeded(exteriorSqFt, parsedCoats, coverageRate) : 0;
+  const exteriorLaborHours = isExterior ? calculateLaborHours(exteriorSqFt, parsedCoats, presetLaborRate) : 0;
+  const exteriorCost = isExterior
+    ? calculateRoomCost({ gallonsNeeded: exteriorGallonsRaw, pricePerGallon: parsedPricePerGallon, laborHours: exteriorLaborHours, laborRate })
     : { materialCost: 0, laborCost: 0 };
+
+  const paintableSqFt = estimates?.totalPaintableSqFt ?? exteriorSqFt;
+  const totalRawGallons = estimates?.totalRawGallons ?? exteriorGallonsRaw;
+  const gallonsNeeded = roundToNearestQuarterGallon(totalRawGallons);
+  const estimatedLaborHours = estimates?.totalLaborHours ?? exteriorLaborHours;
+  const materialCost = estimates?.totalMaterialCost ?? exteriorCost.materialCost;
+  const laborCost = estimatedLaborHours * laborRate;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -165,8 +212,8 @@ export default function RoomForm({
         setError("Room name is required.");
         return;
       }
-      if (!includeWalls && !includeCeiling && !isExterior) {
-        setError("Select at least walls or ceiling.");
+      if (!includeWalls && !includeCeiling && !includeTrim && !includeDoors && !isExterior) {
+        setError("Select at least one component to paint.");
         return;
       }
       const room: Omit<Room, "id" | "updatedAt"> = {
@@ -185,6 +232,16 @@ export default function RoomForm({
         finishType,
         coats: parsedCoats,
         pricePerGallon: parsedPricePerGallon,
+        includeTrim,
+        includeDoors,
+        ceilingColor: ceilingColor.trim(),
+        ceilingBrand: ceilingBrand.trim(),
+        ceilingFinish,
+        ceilingPricePerGallon: parsedCeilingPPG,
+        trimColor: trimColor.trim(),
+        trimBrand: trimBrand.trim(),
+        trimFinish,
+        trimPricePerGallon: parsedTrimPPG,
         paintableSqFt,
         gallonsNeeded,
         estimatedLaborHours,
@@ -219,6 +276,16 @@ export default function RoomForm({
         finishType: null,
         coats: 1,
         pricePerGallon: null,
+        includeTrim: false,
+        includeDoors: false,
+        ceilingColor: "",
+        ceilingBrand: "",
+        ceilingFinish: null,
+        ceilingPricePerGallon: null,
+        trimColor: "",
+        trimBrand: "",
+        trimFinish: null,
+        trimPricePerGallon: null,
         paintableSqFt: 0,
         gallonsNeeded: 0,
         estimatedLaborHours: parsedManualHours ?? 0,
@@ -253,35 +320,32 @@ export default function RoomForm({
             />
           </div>
 
-          {/* Paint Area — checkboxes for interior, single for exterior */}
+          {/* Paint Area — toggle buttons for interior */}
           {!isExterior && (
             <div>
               <label className={labelClass}>What to Paint</label>
               <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIncludeWalls((v) => !v)}
-                  className={`flex-1 py-3 rounded-xl text-[14px] font-medium transition-colors ${
-                    includeWalls
-                      ? "bg-orange-500 text-white"
-                      : "bg-white/[0.08] text-white/60 border border-white/[0.12]"
-                  }`}
-                >
-                  Walls
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIncludeCeiling((v) => !v)}
-                  className={`flex-1 py-3 rounded-xl text-[14px] font-medium transition-colors ${
-                    includeCeiling
-                      ? "bg-orange-500 text-white"
-                      : "bg-white/[0.08] text-white/60 border border-white/[0.12]"
-                  }`}
-                >
-                  Ceiling
-                </button>
+                {([
+                  { label: "Walls", value: includeWalls, toggle: () => setIncludeWalls((v) => !v) },
+                  { label: "Ceiling", value: includeCeiling, toggle: () => setIncludeCeiling((v) => !v) },
+                  { label: "Trim", value: includeTrim, toggle: () => setIncludeTrim((v) => !v) },
+                  { label: "Doors", value: includeDoors, toggle: () => setIncludeDoors((v) => !v) },
+                ] as const).map((btn) => (
+                  <button
+                    key={btn.label}
+                    type="button"
+                    onClick={btn.toggle}
+                    className={`flex-1 py-3 rounded-xl text-[14px] font-medium transition-colors ${
+                      btn.value
+                        ? "bg-orange-500 text-white"
+                        : "bg-white/[0.08] text-white/60 border border-white/[0.12]"
+                    }`}
+                  >
+                    {btn.label}
+                  </button>
+                ))}
               </div>
-              {!includeWalls && !includeCeiling && (
+              {!includeWalls && !includeCeiling && !includeTrim && !includeDoors && (
                 <p className="text-amber-400/70 text-[12px] mt-1.5">Select at least one</p>
               )}
             </div>
@@ -359,80 +423,22 @@ export default function RoomForm({
             </div>
           </div>
 
-          {/* Surface Type */}
-          <div>
-            <label className={labelClass} htmlFor="rf-surface">
-              Surface Type
-            </label>
-            <div className="relative">
-              <select
-                id="rf-surface"
-                value={surfaceType}
-                onChange={(e) => setSurfaceType(e.target.value as SurfaceType)}
-                className={selectClass}
-              >
-                {SURFACE_TYPES.map((st) => (
-                  <option key={st} value={st}>
-                    {formatSurfaceType(st)}
-                  </option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white/40">
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1L6 6L11 1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          {/* Paint Details */}
+          {/* Surface Type & Coats */}
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className={labelClass} htmlFor="rf-color">
-                Paint Color
-              </label>
-              <input
-                id="rf-color"
-                type="text"
-                value={paintColor}
-                onChange={(e) => setPaintColor(e.target.value)}
-                placeholder="e.g. Swiss Coffee"
-                className={inputClass}
-                autoComplete="off"
-              />
-            </div>
-            <div className="flex-1">
-              <label className={labelClass} htmlFor="rf-brand">
-                Brand
-              </label>
-              <input
-                id="rf-brand"
-                type="text"
-                value={paintBrand}
-                onChange={(e) => setPaintBrand(e.target.value)}
-                placeholder="e.g. Sherwin-Williams"
-                className={inputClass}
-                autoComplete="off"
-              />
-            </div>
-          </div>
-
-          {/* Finish & Coats */}
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className={labelClass} htmlFor="rf-finish">
-                Finish
+              <label className={labelClass} htmlFor="rf-surface">
+                Surface Type
               </label>
               <div className="relative">
                 <select
-                  id="rf-finish"
-                  value={finishType}
-                  onChange={(e) => setFinishType(e.target.value as FinishType)}
+                  id="rf-surface"
+                  value={surfaceType}
+                  onChange={(e) => setSurfaceType(e.target.value as SurfaceType)}
                   className={selectClass}
                 >
-                  {FINISH_TYPES.map((ft) => (
-                    <option key={ft} value={ft}>
-                      {formatFinishType(ft)}
+                  {SURFACE_TYPES.map((st) => (
+                    <option key={st} value={st}>
+                      {formatSurfaceType(st)}
                     </option>
                   ))}
                 </select>
@@ -469,21 +475,143 @@ export default function RoomForm({
             </div>
           </div>
 
-          {/* Price per gallon */}
-          <div>
-            <label className={labelClass} htmlFor="rf-ppg">
-              Price per Gallon ($)
-            </label>
-            <input
-              id="rf-ppg"
-              type="number"
-              value={pricePerGallon}
-              onChange={(e) => setPricePerGallon(e.target.value)}
-              placeholder="45"
-              inputMode="decimal"
-              className={inputClass}
-            />
-          </div>
+          {/* Per-component paint detail sections (interior only) */}
+          {!isExterior ? (
+            <>
+              {/* Wall Paint */}
+              {includeWalls && (
+                <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-3 flex flex-col gap-3">
+                  <p className="text-white/50 text-[11px] font-semibold uppercase tracking-widest">Wall Paint</p>
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <label className={labelClass} htmlFor="rf-wall-color">Color</label>
+                      <input id="rf-wall-color" type="text" value={paintColor} onChange={(e) => setPaintColor(e.target.value)} placeholder="e.g. Swiss Coffee" className={inputClass} autoComplete="off" />
+                    </div>
+                    <div className="flex-1">
+                      <label className={labelClass} htmlFor="rf-wall-brand">Brand</label>
+                      <input id="rf-wall-brand" type="text" value={paintBrand} onChange={(e) => setPaintBrand(e.target.value)} placeholder="e.g. Sherwin-Williams" className={inputClass} autoComplete="off" />
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <label className={labelClass} htmlFor="rf-wall-finish">Finish</label>
+                      <div className="relative">
+                        <select id="rf-wall-finish" value={finishType} onChange={(e) => setFinishType(e.target.value as FinishType)} className={selectClass}>
+                          {FINISH_TYPES.map((ft) => (<option key={ft} value={ft}>{formatFinishType(ft)}</option>))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white/40">
+                          <svg width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1L6 6L11 1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="w-28">
+                      <label className={labelClass} htmlFor="rf-wall-ppg">$/gal</label>
+                      <input id="rf-wall-ppg" type="number" value={pricePerGallon} onChange={(e) => setPricePerGallon(e.target.value)} placeholder="45" inputMode="decimal" className={inputClass} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Ceiling Paint */}
+              {includeCeiling && (
+                <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-3 flex flex-col gap-3">
+                  <p className="text-white/50 text-[11px] font-semibold uppercase tracking-widest">Ceiling Paint</p>
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <label className={labelClass} htmlFor="rf-ceil-color">Color</label>
+                      <input id="rf-ceil-color" type="text" value={ceilingColor} onChange={(e) => setCeilingColor(e.target.value)} placeholder="e.g. White" className={inputClass} autoComplete="off" />
+                    </div>
+                    <div className="flex-1">
+                      <label className={labelClass} htmlFor="rf-ceil-brand">Brand</label>
+                      <input id="rf-ceil-brand" type="text" value={ceilingBrand} onChange={(e) => setCeilingBrand(e.target.value)} placeholder="e.g. Sherwin-Williams" className={inputClass} autoComplete="off" />
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <label className={labelClass} htmlFor="rf-ceil-finish">Finish</label>
+                      <div className="relative">
+                        <select id="rf-ceil-finish" value={ceilingFinish} onChange={(e) => setCeilingFinish(e.target.value as FinishType)} className={selectClass}>
+                          {FINISH_TYPES.map((ft) => (<option key={ft} value={ft}>{formatFinishType(ft)}</option>))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white/40">
+                          <svg width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1L6 6L11 1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="w-28">
+                      <label className={labelClass} htmlFor="rf-ceil-ppg">$/gal</label>
+                      <input id="rf-ceil-ppg" type="number" value={ceilingPricePerGallon} onChange={(e) => setCeilingPricePerGallon(e.target.value)} placeholder="45" inputMode="decimal" className={inputClass} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Trim/Door Paint */}
+              {(includeTrim || includeDoors) && (
+                <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-3 flex flex-col gap-3">
+                  <p className="text-white/50 text-[11px] font-semibold uppercase tracking-widest">Trim / Door Paint</p>
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <label className={labelClass} htmlFor="rf-trim-color">Color</label>
+                      <input id="rf-trim-color" type="text" value={trimColor} onChange={(e) => setTrimColor(e.target.value)} placeholder="e.g. White Dove" className={inputClass} autoComplete="off" />
+                    </div>
+                    <div className="flex-1">
+                      <label className={labelClass} htmlFor="rf-trim-brand">Brand</label>
+                      <input id="rf-trim-brand" type="text" value={trimBrand} onChange={(e) => setTrimBrand(e.target.value)} placeholder="e.g. Benjamin Moore" className={inputClass} autoComplete="off" />
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <label className={labelClass} htmlFor="rf-trim-finish">Finish</label>
+                      <div className="relative">
+                        <select id="rf-trim-finish" value={trimFinish} onChange={(e) => setTrimFinish(e.target.value as FinishType)} className={selectClass}>
+                          {FINISH_TYPES.map((ft) => (<option key={ft} value={ft}>{formatFinishType(ft)}</option>))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white/40">
+                          <svg width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1L6 6L11 1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="w-28">
+                      <label className={labelClass} htmlFor="rf-trim-ppg">$/gal</label>
+                      <input id="rf-trim-ppg" type="number" value={trimPricePerGallon} onChange={(e) => setTrimPricePerGallon(e.target.value)} placeholder="50" inputMode="decimal" className={inputClass} />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Exterior: single paint details section */}
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className={labelClass} htmlFor="rf-color">Paint Color</label>
+                  <input id="rf-color" type="text" value={paintColor} onChange={(e) => setPaintColor(e.target.value)} placeholder="e.g. Swiss Coffee" className={inputClass} autoComplete="off" />
+                </div>
+                <div className="flex-1">
+                  <label className={labelClass} htmlFor="rf-brand">Brand</label>
+                  <input id="rf-brand" type="text" value={paintBrand} onChange={(e) => setPaintBrand(e.target.value)} placeholder="e.g. Sherwin-Williams" className={inputClass} autoComplete="off" />
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className={labelClass} htmlFor="rf-finish">Finish</label>
+                  <div className="relative">
+                    <select id="rf-finish" value={finishType} onChange={(e) => setFinishType(e.target.value as FinishType)} className={selectClass}>
+                      {FINISH_TYPES.map((ft) => (<option key={ft} value={ft}>{formatFinishType(ft)}</option>))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white/40">
+                      <svg width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1L6 6L11 1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </div>
+                  </div>
+                </div>
+                <div className="w-28">
+                  <label className={labelClass} htmlFor="rf-ppg">$/gal</label>
+                  <input id="rf-ppg" type="number" value={pricePerGallon} onChange={(e) => setPricePerGallon(e.target.value)} placeholder="45" inputMode="decimal" className={inputClass} />
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Live Calculation Preview */}
           {paintableSqFt > 0 && (
@@ -491,9 +619,39 @@ export default function RoomForm({
               <p className="text-orange-400 text-[11px] font-semibold uppercase tracking-widest mb-3">
                 Live Estimate
               </p>
-              <div className="grid grid-cols-2 gap-y-2.5 gap-x-4">
+              {/* Per-component lines (interior only) */}
+              {estimates && (
+                <div className="flex flex-col gap-2 mb-3">
+                  {estimates.walls && (
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-white/50">Walls</span>
+                      <span className="text-white">{Math.round(estimates.walls.paintableSqFt)} sq ft &middot; {roundToNearestQuarterGallon(estimates.walls.rawGallons)} gal</span>
+                    </div>
+                  )}
+                  {estimates.ceiling && (
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-white/50">Ceiling</span>
+                      <span className="text-white">{Math.round(estimates.ceiling.paintableSqFt)} sq ft &middot; {roundToNearestQuarterGallon(estimates.ceiling.rawGallons)} gal</span>
+                    </div>
+                  )}
+                  {estimates.trim && (
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-white/50">Trim</span>
+                      <span className="text-white">{Math.round(estimates.trim.paintableSqFt)} sq ft &middot; {roundToNearestQuarterGallon(estimates.trim.rawGallons)} gal</span>
+                    </div>
+                  )}
+                  {estimates.doors && (
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-white/50">Doors</span>
+                      <span className="text-white">{Math.round(estimates.doors.paintableSqFt)} sq ft &middot; {roundToNearestQuarterGallon(estimates.doors.rawGallons)} gal</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              {/* Totals grid */}
+              <div className={`grid grid-cols-2 gap-y-2.5 gap-x-4${estimates ? " pt-2 border-t border-orange-500/15" : ""}`}>
                 <div>
-                  <p className="text-white/40 text-[11px]">Paintable Sq Ft</p>
+                  <p className="text-white/40 text-[11px]">Total Sq Ft</p>
                   <p className="text-white text-[15px] font-semibold">{Math.round(paintableSqFt)} sq ft</p>
                 </div>
                 <div>
