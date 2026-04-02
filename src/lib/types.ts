@@ -116,6 +116,19 @@ export interface Room {
   finishType: FinishType | null;
   coats: number;
   pricePerGallon: number | null;
+  // Trim/door toggles
+  includeTrim: boolean;
+  includeDoors: boolean;
+  // Ceiling paint details
+  ceilingColor: string;
+  ceilingBrand: string;
+  ceilingFinish: FinishType | null;
+  ceilingPricePerGallon: number | null;
+  // Trim/door paint details
+  trimColor: string;
+  trimBrand: string;
+  trimFinish: FinishType | null;
+  trimPricePerGallon: number | null;
   paintableSqFt: number;
   gallonsNeeded: number;
   estimatedLaborHours: number;
