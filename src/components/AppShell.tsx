@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useBackupReminder } from "@/hooks/useBackupReminder";
 import { useSettings } from "@/hooks/useSettings";
+import { useSyncStatus } from "@/hooks/useSyncStatus";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -16,6 +17,7 @@ export default function AppShell({ children, showBack = false, title }: AppShell
   const isOnline = useOnlineStatus();
   const settings = useSettings();
   const needsBackup = useBackupReminder(settings);
+  const syncStatus = useSyncStatus();
   const [backupDismissed, setBackupDismissed] = useState(false);
 
   const showBackupBanner = needsBackup && !backupDismissed;
@@ -58,6 +60,16 @@ export default function AppShell({ children, showBack = false, title }: AppShell
 
         {/* Online/offline dot */}
         <div className="flex items-center gap-2">
+          {/* Sync indicator */}
+          {syncStatus.syncing ? (
+            <svg width="14" height="14" viewBox="0 0 14 14" className="text-blue-400 animate-spin" fill="none">
+              <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.5" strokeDasharray="12 20" />
+            </svg>
+          ) : syncStatus.lastSynced ? (
+            <svg width="14" height="14" viewBox="0 0 14 14" className="text-emerald-400/60" fill="none">
+              <path d="M3 7.5L5.5 10L11 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          ) : null}
           <span
             className={`text-xs font-medium ${isOnline ? "text-emerald-400" : "text-amber-400"}`}
           >

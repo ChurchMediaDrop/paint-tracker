@@ -14,6 +14,8 @@ import {
   deleteMessageTemplate,
 } from "@/hooks/useSettings";
 import { exportDatabase, importDatabase, downloadJson } from "@/lib/backup";
+import { useSyncStatus } from "@/hooks/useSyncStatus";
+import { syncWithCloud } from "@/lib/sync";
 import { formatSurfaceType, formatServiceType } from "@/lib/format";
 import { MessageChannel, SurfaceType, ServiceType } from "@/lib/types";
 import type { MessageTemplate, PaintPreset } from "@/lib/types";
@@ -461,6 +463,53 @@ function AddTemplateForm({ onDone }: { onDone: () => void }) {
   );
 }
 
+// ─── Cloud Sync Section ───────────────────────────────────────────────────────
+function CloudSyncSection() {
+  const syncStatus = useSyncStatus();
+  const [syncing, setSyncing] = useState(false);
+
+  async function handleSyncNow() {
+    setSyncing(true);
+    await syncWithCloud();
+    setSyncing(false);
+  }
+
+  return (
+    <>
+      <SectionHeader title="Cloud Sync" />
+      <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] px-4 py-4 flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-white text-[14px] font-medium">Last Synced</p>
+            <p className="text-white/40 text-[13px] mt-0.5">
+              {syncStatus.lastSynced
+                ? syncStatus.lastSynced.toLocaleString()
+                : "Never"}
+            </p>
+          </div>
+          <button
+            onClick={handleSyncNow}
+            disabled={syncing || syncStatus.syncing}
+            className="px-4 py-2 rounded-xl bg-blue-500/20 border border-blue-500/30 text-blue-400 text-[14px] font-medium active:bg-blue-500/30 transition-colors disabled:opacity-50"
+          >
+            {syncing || syncStatus.syncing ? "Syncing…" : "Sync Now"}
+          </button>
+        </div>
+        {syncStatus.error && (
+          <p className="text-amber-400/80 text-[12px]">
+            Sync issue: {syncStatus.error}. Will retry automatically.
+          </p>
+        )}
+        {!process.env.NEXT_PUBLIC_SUPABASE_URL && (
+          <p className="text-white/30 text-[12px]">
+            Cloud sync not configured. Add Supabase credentials to enable.
+          </p>
+        )}
+      </div>
+    </>
+  );
+}
+
 // ─── Accuracy Stats Section ───────────────────────────────────────────────────
 function AccuracyStats() {
   const data = useLiveQuery(async () => {
@@ -652,6 +701,9 @@ export default function SettingsPage() {
           </button>
         </div>
         <p className="text-white/30 text-[12px] text-center -mt-1">Google Calendar integration coming soon</p>
+
+        {/* ── Cloud Sync ── */}
+        <CloudSyncSection />
 
         {/* ── Backup & Restore ── */}
         <SectionHeader title="Backup & Restore" />
