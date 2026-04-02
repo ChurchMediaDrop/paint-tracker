@@ -35,6 +35,36 @@ export class PaintTrackerDB extends Dexie {
       calendarSyncQueue: "id, createdAt",
       appSettings: "id",
     });
+    this.version(2).stores({
+      customers: "id, name, updatedAt",
+      jobs: "id, customerId, status, scheduledDate, updatedAt",
+      quotes: "id, jobId, updatedAt",
+      rooms: "id, quoteId, sortOrder, updatedAt",
+      actuals: "id, jobId, updatedAt",
+      messageTemplates: "id, isDefault, updatedAt",
+      paintPresets: "id, surfaceType, isDefault, updatedAt",
+      calendarSyncQueue: "id, createdAt",
+      appSettings: "id",
+    }).upgrade(tx => {
+      const now = new Date().toISOString();
+      return Promise.all([
+        tx.table("rooms").toCollection().modify(record => {
+          if (!record.updatedAt) record.updatedAt = now;
+        }),
+        tx.table("actuals").toCollection().modify(record => {
+          if (!record.updatedAt) record.updatedAt = now;
+        }),
+        tx.table("messageTemplates").toCollection().modify(record => {
+          if (!record.updatedAt) record.updatedAt = now;
+        }),
+        tx.table("paintPresets").toCollection().modify(record => {
+          if (!record.updatedAt) record.updatedAt = now;
+        }),
+        tx.table("quotes").toCollection().modify(record => {
+          if (!record.updatedAt) record.updatedAt = now;
+        }),
+      ]);
+    });
   }
 }
 

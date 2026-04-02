@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   ServiceType,
   RoomType,
@@ -22,17 +22,12 @@ interface RoomFormProps {
   serviceType: ServiceType;
   laborRate: number;
   quoteId: string;
-  onSave: (room: Omit<Room, "id">) => void;
+  onSave: (room: Omit<Room, "id" | "updatedAt">) => void;
   onCancel: () => void;
+  editRoom?: Room;
 }
 
 const PAINT_SERVICES = [ServiceType.InteriorPaint, ServiceType.ExteriorPaint];
-
-const ROOM_TYPE_OPTIONS = [
-  { value: RoomType.Walls, label: "Walls" },
-  { value: RoomType.Ceiling, label: "Ceiling" },
-  { value: RoomType.Exterior, label: "Exterior" },
-];
 
 const SURFACE_TYPES: SurfaceType[] = [
   SurfaceType.SmoothDrywall,
@@ -60,37 +55,63 @@ const labelClass = "block text-white/50 text-[12px] font-medium mb-1.5";
 const selectClass =
   "w-full bg-white/[0.08] border border-white/[0.12] rounded-xl px-4 py-3 text-white text-[15px] focus:outline-none focus:border-orange-500/60 focus:bg-white/10 appearance-none";
 
+function deriveChecks(roomType: RoomType): { walls: boolean; ceiling: boolean } {
+  switch (roomType) {
+    case RoomType.WallsAndCeiling:
+      return { walls: true, ceiling: true };
+    case RoomType.Ceiling:
+      return { walls: false, ceiling: true };
+    case RoomType.Walls:
+    default:
+      return { walls: true, ceiling: false };
+  }
+}
+
+function deriveRoomType(walls: boolean, ceiling: boolean): RoomType {
+  if (walls && ceiling) return RoomType.WallsAndCeiling;
+  if (ceiling) return RoomType.Ceiling;
+  return RoomType.Walls;
+}
+
 export default function RoomForm({
   serviceType,
   laborRate,
   quoteId,
   onSave,
   onCancel,
+  editRoom,
 }: RoomFormProps) {
   const isPaint = PAINT_SERVICES.includes(serviceType);
+  const isExterior = serviceType === ServiceType.ExteriorPaint;
   const paintPresets = usePaintPresets();
 
+  const initialChecks = editRoom ? deriveChecks(editRoom.roomType) : { walls: true, ceiling: false };
+
   // Paint mode state
-  const [name, setName] = useState("");
-  const [roomType, setRoomType] = useState<RoomType>(RoomType.Walls);
-  const [length, setLength] = useState("");
-  const [width, setWidth] = useState("");
-  const [height, setHeight] = useState("");
-  const [doorCount, setDoorCount] = useState("0");
-  const [windowCount, setWindowCount] = useState("0");
-  const [surfaceType, setSurfaceType] = useState<SurfaceType>(SurfaceType.SmoothDrywall);
-  const [paintColor, setPaintColor] = useState("");
-  const [paintBrand, setPaintBrand] = useState("");
-  const [finishType, setFinishType] = useState<FinishType>(FinishType.Eggshell);
-  const [coats, setCoats] = useState("2");
-  const [pricePerGallon, setPricePerGallon] = useState("45");
+  const [name, setName] = useState(editRoom?.name ?? "");
+  const [includeWalls, setIncludeWalls] = useState(isExterior ? true : initialChecks.walls);
+  const [includeCeiling, setIncludeCeiling] = useState(isExterior ? false : initialChecks.ceiling);
+  const [length, setLength] = useState(editRoom?.length?.toString() ?? "");
+  const [width, setWidth] = useState(editRoom?.width?.toString() ?? "");
+  const [height, setHeight] = useState(editRoom?.height?.toString() ?? "");
+  const [doorCount, setDoorCount] = useState(editRoom?.doorCount?.toString() ?? "0");
+  const [windowCount, setWindowCount] = useState(editRoom?.windowCount?.toString() ?? "0");
+  const [surfaceType, setSurfaceType] = useState<SurfaceType>(editRoom?.surfaceType ?? SurfaceType.SmoothDrywall);
+  const [paintColor, setPaintColor] = useState(editRoom?.paintColor ?? "");
+  const [paintBrand, setPaintBrand] = useState(editRoom?.paintBrand ?? "");
+  const [finishType, setFinishType] = useState<FinishType>(editRoom?.finishType ?? FinishType.Eggshell);
+  const [coats, setCoats] = useState(editRoom?.coats?.toString() ?? "2");
+  const [pricePerGallon, setPricePerGallon] = useState(editRoom?.pricePerGallon?.toString() ?? "45");
 
   // Non-paint mode state
-  const [description, setDescription] = useState("");
-  const [manualHours, setManualHours] = useState("");
-  const [manualCost, setManualCost] = useState("");
+  const [description, setDescription] = useState(editRoom?.description ?? "");
+  const [manualHours, setManualHours] = useState(editRoom?.manualHours?.toString() ?? "");
+  const [manualCost, setManualCost] = useState(editRoom?.manualCost?.toString() ?? "");
 
   const [error, setError] = useState("");
+
+  // Derive room type from checkboxes
+  const roomType = isExterior ? RoomType.Exterior : deriveRoomType(includeWalls, includeCeiling);
 
   // Get coverage/labor rates from presets for selected surface type
   const surfacePreset = paintPresets.find((p) => p.surfaceType === surfaceType);
@@ -135,13 +156,6 @@ export default function RoomForm({
       })
     : { materialCost: 0, laborCost: 0 };
 
-  // Reset dimensions when room type changes
-  useEffect(() => {
-    setLength("");
-    setWidth("");
-    setHeight("");
-  }, [roomType]);
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -151,7 +165,11 @@ export default function RoomForm({
         setError("Room name is required.");
         return;
       }
-      const room: Omit<Room, "id"> = {
+      if (!includeWalls && !includeCeiling && !isExterior) {
+        setError("Select at least walls or ceiling.");
+        return;
+      }
+      const room: Omit<Room, "id" | "updatedAt"> = {
         quoteId,
         name: name.trim(),
         serviceType,
@@ -175,7 +193,7 @@ export default function RoomForm({
         description: "",
         manualHours: null,
         manualCost: null,
-        sortOrder: Date.now(),
+        sortOrder: editRoom?.sortOrder ?? Date.now(),
       };
       onSave(room);
     } else {
@@ -185,7 +203,7 @@ export default function RoomForm({
       }
       const parsedManualHours = parseFloat(manualHours) || null;
       const parsedManualCost = parseFloat(manualCost) || null;
-      const room: Omit<Room, "id"> = {
+      const room: Omit<Room, "id" | "updatedAt"> = {
         quoteId,
         name: description.trim(),
         serviceType,
@@ -209,14 +227,11 @@ export default function RoomForm({
         description: description.trim(),
         manualHours: parsedManualHours,
         manualCost: parsedManualCost,
-        sortOrder: Date.now(),
+        sortOrder: editRoom?.sortOrder ?? Date.now(),
       };
       onSave(room);
     }
   }
-
-  const showWidth = roomType === RoomType.Walls || roomType === RoomType.Ceiling;
-  const showHeight = roomType === RoomType.Walls || roomType === RoomType.Exterior;
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -238,28 +253,41 @@ export default function RoomForm({
             />
           </div>
 
-          {/* Room Type */}
-          <div>
-            <label className={labelClass}>Room Type</label>
-            <div className="flex gap-2">
-              {ROOM_TYPE_OPTIONS.map((opt) => (
+          {/* Paint Area — checkboxes for interior, single for exterior */}
+          {!isExterior && (
+            <div>
+              <label className={labelClass}>What to Paint</label>
+              <div className="flex gap-2">
                 <button
-                  key={opt.value}
                   type="button"
-                  onClick={() => setRoomType(opt.value)}
+                  onClick={() => setIncludeWalls((v) => !v)}
                   className={`flex-1 py-3 rounded-xl text-[14px] font-medium transition-colors ${
-                    roomType === opt.value
+                    includeWalls
                       ? "bg-orange-500 text-white"
                       : "bg-white/[0.08] text-white/60 border border-white/[0.12]"
                   }`}
                 >
-                  {opt.label}
+                  Walls
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => setIncludeCeiling((v) => !v)}
+                  className={`flex-1 py-3 rounded-xl text-[14px] font-medium transition-colors ${
+                    includeCeiling
+                      ? "bg-orange-500 text-white"
+                      : "bg-white/[0.08] text-white/60 border border-white/[0.12]"
+                  }`}
+                >
+                  Ceiling
+                </button>
+              </div>
+              {!includeWalls && !includeCeiling && (
+                <p className="text-amber-400/70 text-[12px] mt-1.5">Select at least one</p>
+              )}
             </div>
-          </div>
+          )}
 
-          {/* Dimensions */}
+          {/* Dimensions — always show all three */}
           <div>
             <label className={labelClass}>Dimensions (ft)</label>
             <div className="flex gap-2">
@@ -274,32 +302,28 @@ export default function RoomForm({
                 />
                 <p className="text-white/30 text-[11px] mt-1 text-center">Length</p>
               </div>
-              {showWidth && (
-                <div className="flex-1">
-                  <input
-                    type="number"
-                    value={width}
-                    onChange={(e) => setWidth(e.target.value)}
-                    placeholder="Width"
-                    inputMode="decimal"
-                    className={inputClass}
-                  />
-                  <p className="text-white/30 text-[11px] mt-1 text-center">Width</p>
-                </div>
-              )}
-              {showHeight && (
-                <div className="flex-1">
-                  <input
-                    type="number"
-                    value={height}
-                    onChange={(e) => setHeight(e.target.value)}
-                    placeholder="Height"
-                    inputMode="decimal"
-                    className={inputClass}
-                  />
-                  <p className="text-white/30 text-[11px] mt-1 text-center">Height</p>
-                </div>
-              )}
+              <div className="flex-1">
+                <input
+                  type="number"
+                  value={width}
+                  onChange={(e) => setWidth(e.target.value)}
+                  placeholder="Width"
+                  inputMode="decimal"
+                  className={inputClass}
+                />
+                <p className="text-white/30 text-[11px] mt-1 text-center">Width</p>
+              </div>
+              <div className="flex-1">
+                <input
+                  type="number"
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                  placeholder="Height"
+                  inputMode="decimal"
+                  className={inputClass}
+                />
+                <p className="text-white/30 text-[11px] mt-1 text-center">Height</p>
+              </div>
             </div>
           </div>
 
@@ -588,7 +612,7 @@ export default function RoomForm({
           type="submit"
           className="flex-1 py-3.5 rounded-2xl bg-gradient-to-br from-orange-500 to-rose-600 text-white font-semibold text-[15px] active:scale-[0.98] transition-transform shadow-lg shadow-orange-900/30"
         >
-          Add Room
+          {editRoom ? "Update Room" : "Add Room"}
         </button>
       </div>
     </form>

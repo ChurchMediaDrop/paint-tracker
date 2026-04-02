@@ -134,6 +134,7 @@ export default function JobDetailClient({ id }: JobDetailClientProps) {
         actualGallonsUsed: gallons,
         notes: actualNotes,
         completedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       });
       setActualsSaved(true);
     } finally {

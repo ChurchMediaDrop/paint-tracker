@@ -21,7 +21,7 @@ export async function updatePaintPreset(
   id: string,
   data: Partial<PaintPreset>
 ): Promise<void> {
-  await db.paintPresets.update(id, data);
+  await db.paintPresets.update(id, { ...data, updatedAt: new Date().toISOString() });
 }
 
 export function useMessageTemplates() {
@@ -33,14 +33,14 @@ export async function updateMessageTemplate(
   id: string,
   data: Partial<MessageTemplate>
 ): Promise<void> {
-  await db.messageTemplates.update(id, data);
+  await db.messageTemplates.update(id, { ...data, updatedAt: new Date().toISOString() });
 }
 
 export async function createMessageTemplate(
-  data: Omit<MessageTemplate, "id">
+  data: Omit<MessageTemplate, "id" | "updatedAt">
 ): Promise<string> {
   const id = crypto.randomUUID();
-  await db.messageTemplates.add({ ...data, id });
+  await db.messageTemplates.add({ ...data, id, updatedAt: new Date().toISOString() });
   return id;
 }
 

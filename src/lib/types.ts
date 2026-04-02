@@ -26,6 +26,7 @@ export const JOB_STATUS_ORDER: JobStatus[] = [
 export enum RoomType {
   Walls = "walls",
   Ceiling = "ceiling",
+  WallsAndCeiling = "walls_and_ceiling",
   Exterior = "exterior",
   Other = "other",
 }
@@ -124,6 +125,7 @@ export interface Room {
   manualHours: number | null;
   manualCost: number | null;
   sortOrder: number;
+  updatedAt: string;
 }
 
 export interface Actuals {
@@ -134,6 +136,7 @@ export interface Actuals {
   actualGallonsUsed: number;
   notes: string;
   completedAt: string;
+  updatedAt: string;
 }
 
 export interface MessageTemplate {
@@ -143,6 +146,7 @@ export interface MessageTemplate {
   subject: string;
   body: string;
   isDefault: boolean;
+  updatedAt: string;
 }
 
 export interface PaintPreset {
@@ -151,6 +155,7 @@ export interface PaintPreset {
   coverageRate: number;
   laborRate: number;
   isDefault: boolean;
+  updatedAt: string;
 }
 
 export interface CalendarSyncQueue {

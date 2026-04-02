@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import CustomerPicker from "@/components/CustomerPicker";
@@ -15,6 +15,41 @@ import { ServiceType, JobStatus, type Room, type Quote } from "@/lib/types";
 import { formatCurrency, formatServiceType } from "@/lib/format";
 
 type Step = 1 | 2 | 3 | 4;
+
+const STORAGE_KEY = "paint-tracker-new-quote-draft";
+
+interface DraftState {
+  step: Step;
+  customerId: string | null;
+  serviceType: ServiceType;
+  rooms: Room[];
+}
+
+function loadDraft(): DraftState | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as DraftState;
+  } catch {
+    return null;
+  }
+}
+
+function saveDraft(state: DraftState) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // localStorage full or unavailable — silently ignore
+  }
+}
+
+function clearDraft() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
 
 const SERVICE_TYPES: ServiceType[] = [
   ServiceType.InteriorPaint,
@@ -64,23 +99,39 @@ function SelectedCustomerBadge({ customerId }: { customerId: string }) {
 function RoomCard({
   room,
   onDelete,
+  onEdit,
 }: {
   room: Room;
   onDelete: (id: string) => void;
+  onEdit: (room: Room) => void;
 }) {
   const total = (room.materialCost || room.manualCost || 0) + (room.laborCost || 0);
   return (
     <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] px-4 py-3.5 flex items-center justify-between gap-3">
-      <div className="min-w-0">
+      <button
+        onClick={() => onEdit(room)}
+        className="min-w-0 text-left flex-1 active:opacity-60 transition-opacity"
+      >
         <p className="text-white text-[14px] font-medium truncate">{room.name}</p>
         <p className="text-white/40 text-[12px] mt-0.5">
           {formatServiceType(room.serviceType)}
           {room.paintColor && ` · ${room.paintColor}`}
           {room.paintableSqFt > 0 && ` · ${Math.round(room.paintableSqFt)} sq ft`}
         </p>
-      </div>
+      </button>
       <div className="flex items-center gap-3 flex-shrink-0">
         <span className="text-white text-[14px] font-semibold">{formatCurrency(total)}</span>
+        {/* Edit button */}
+        <button
+          onClick={() => onEdit(room)}
+          className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-500/15 border border-blue-500/20 text-blue-400 active:bg-blue-500/30 transition-colors"
+          aria-label="Edit room"
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M8.5 1.5L10.5 3.5L4 10H2V8L8.5 1.5Z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+        {/* Delete button */}
         <button
           onClick={() => onDelete(room.id)}
           className="w-8 h-8 flex items-center justify-center rounded-full bg-rose-500/15 border border-rose-500/20 text-rose-400 active:bg-rose-500/30 transition-colors"
@@ -128,25 +179,30 @@ function NewQuotePageInner() {
   const defaultLaborRate = settings?.defaultLaborRate ?? 65;
   const defaultMarkupPercent = settings?.defaultMarkupPercent ?? 20;
 
-  const [step, setStep] = useState<Step>(1);
-  const [customerId, setCustomerId] = useState<string | null>(
-    searchParams.get("customerId")
-  );
-  const [serviceType, setServiceType] = useState<ServiceType>(ServiceType.InteriorPaint);
-  const [rooms, setRooms] = useState<Room[]>([]);
+  // Restore draft state from localStorage
+  const draft = loadDraft();
+  const urlCustomerId = searchParams.get("customerId");
+
+  const [step, setStep] = useState<Step>(draft?.step ?? (urlCustomerId ? 2 : 1));
+  const [customerId, setCustomerId] = useState<string | null>(draft?.customerId ?? urlCustomerId);
+  const [serviceType, setServiceType] = useState<ServiceType>(draft?.serviceType ?? ServiceType.InteriorPaint);
+  const [rooms, setRooms] = useState<Room[]>(draft?.rooms ?? []);
   const [showRoomForm, setShowRoomForm] = useState(false);
+  const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
 
   // Temp quoteId used during room entry (not yet persisted until step 4 save)
   const [tempQuoteId] = useState(() => `temp-${Date.now()}`);
 
-  // If customerId was pre-populated from URL, jump to step 2
+  // Persist draft state on every change
+  const persistDraft = useCallback(() => {
+    saveDraft({ step, customerId, serviceType, rooms });
+  }, [step, customerId, serviceType, rooms]);
+
   useEffect(() => {
-    if (customerId) {
-      setStep(2);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    persistDraft();
+  }, [persistDraft]);
 
   function handleCustomerSelect(id: string) {
     setCustomerId(id);
@@ -158,10 +214,27 @@ function NewQuotePageInner() {
     setStep(3);
   }
 
-  function handleRoomSave(roomData: Omit<Room, "id">) {
-    const room: Room = { ...roomData, id: `temp-room-${Date.now()}-${Math.random()}` };
-    setRooms((prev) => [...prev, room]);
+  function handleRoomSave(roomData: Omit<Room, "id" | "updatedAt">) {
+    if (editingRoom) {
+      setRooms((prev) =>
+        prev.map((r) => (r.id === editingRoom.id ? { ...roomData, id: editingRoom.id, updatedAt: new Date().toISOString() } : r))
+      );
+    } else {
+      const room: Room = { ...roomData, id: `temp-room-${Date.now()}-${Math.random()}`, updatedAt: new Date().toISOString() };
+      setRooms((prev) => [...prev, room]);
+    }
     setShowRoomForm(false);
+    setEditingRoom(null);
+  }
+
+  function handleEditRoom(room: Room) {
+    setEditingRoom(room);
+    setShowRoomForm(true);
+  }
+
+  function handleCancelForm() {
+    setShowRoomForm(false);
+    setEditingRoom(null);
   }
 
   function handleDeleteRoom(id: string) {
@@ -201,7 +274,7 @@ function NewQuotePageInner() {
       }
 
       await recalculateQuoteTotals(quoteId);
-
+      clearDraft();
       router.push(`/jobs/${jobId}`);
     } catch {
       setSaveError("Failed to save quote. Please try again.");
@@ -300,13 +373,16 @@ function NewQuotePageInner() {
             {/* Room Form */}
             {showRoomForm ? (
               <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] px-4 py-4">
-                <h3 className="text-white font-semibold text-[15px] mb-4">New Room</h3>
+                <h3 className="text-white font-semibold text-[15px] mb-4">
+                  {editingRoom ? "Edit Room" : "New Room"}
+                </h3>
                 <RoomForm
                   serviceType={serviceType}
                   laborRate={defaultLaborRate}
                   quoteId={tempQuoteId}
                   onSave={handleRoomSave}
-                  onCancel={() => setShowRoomForm(false)}
+                  onCancel={handleCancelForm}
+                  editRoom={editingRoom ?? undefined}
                 />
               </div>
             ) : (
@@ -328,7 +404,7 @@ function NewQuotePageInner() {
               <div className="flex flex-col gap-2">
                 <p className="text-white/40 text-[12px] font-semibold uppercase tracking-widest">Added Rooms</p>
                 {rooms.map((room) => (
-                  <RoomCard key={room.id} room={room} onDelete={handleDeleteRoom} />
+                  <RoomCard key={room.id} room={room} onDelete={handleDeleteRoom} onEdit={handleEditRoom} />
                 ))}
               </div>
             )}

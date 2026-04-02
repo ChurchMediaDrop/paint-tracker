@@ -8,7 +8,7 @@ import {
   type AppSettings,
 } from "@/lib/types";
 
-const DEFAULT_PRESETS: Omit<PaintPreset, "id">[] = [
+const DEFAULT_PRESETS: Omit<PaintPreset, "id" | "updatedAt">[] = [
   { surfaceType: SurfaceType.SmoothDrywall, coverageRate: 375, laborRate: 175, isDefault: true },
   { surfaceType: SurfaceType.TexturedWalls, coverageRate: 275, laborRate: 120, isDefault: true },
   { surfaceType: SurfaceType.Ceiling, coverageRate: 375, laborRate: 150, isDefault: true },
@@ -20,7 +20,7 @@ const DEFAULT_PRESETS: Omit<PaintPreset, "id">[] = [
   { surfaceType: SurfaceType.WoodDeck, coverageRate: 300, laborRate: 120, isDefault: true },
 ];
 
-const DEFAULT_TEMPLATES: Omit<MessageTemplate, "id">[] = [
+const DEFAULT_TEMPLATES: Omit<MessageTemplate, "id" | "updatedAt">[] = [
   {
     name: "Quote Sent",
     channel: MessageChannel.SMS,
@@ -61,23 +61,27 @@ const DEFAULT_SETTINGS: AppSettings = {
   googleCalendarToken: "",
 };
 
+let seeded = false;
+
 export async function seedDatabase(): Promise<void> {
+  if (seeded) return;
+  seeded = true;
+
   const existingPresets = await db.paintPresets.count();
   if (existingPresets === 0) {
-    await db.paintPresets.bulkAdd(
-      DEFAULT_PRESETS.map((p) => ({ ...p, id: uuid() }))
+    const now = new Date().toISOString();
+    await db.paintPresets.bulkPut(
+      DEFAULT_PRESETS.map((p) => ({ ...p, id: uuid(), updatedAt: now }))
     );
   }
 
   const existingTemplates = await db.messageTemplates.count();
   if (existingTemplates === 0) {
-    await db.messageTemplates.bulkAdd(
-      DEFAULT_TEMPLATES.map((t) => ({ ...t, id: uuid() }))
+    const now = new Date().toISOString();
+    await db.messageTemplates.bulkPut(
+      DEFAULT_TEMPLATES.map((t) => ({ ...t, id: uuid(), updatedAt: now }))
     );
   }
 
-  const existingSettings = await db.appSettings.get("default");
-  if (!existingSettings) {
-    await db.appSettings.add(DEFAULT_SETTINGS);
-  }
+  await db.appSettings.put(DEFAULT_SETTINGS);
 }

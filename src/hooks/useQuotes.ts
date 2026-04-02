@@ -42,10 +42,10 @@ export async function updateQuote(
 }
 
 export async function addRoom(
-  data: Omit<Room, "id">
+  data: Omit<Room, "id" | "updatedAt">
 ): Promise<string> {
   const id = uuid();
-  await db.rooms.add({ ...data, id });
+  await db.rooms.add({ ...data, id, updatedAt: new Date().toISOString() });
   return id;
 }
 
@@ -53,7 +53,7 @@ export async function updateRoom(
   id: string,
   data: Partial<Room>
 ): Promise<void> {
-  await db.rooms.update(id, data);
+  await db.rooms.update(id, { ...data, updatedAt: new Date().toISOString() });
 }
 
 export async function deleteRoom(id: string): Promise<void> {

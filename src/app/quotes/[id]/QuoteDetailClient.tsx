@@ -11,6 +11,7 @@ import {
   useRooms,
   addRoom,
   deleteRoom,
+  updateRoom,
   updateQuote,
   recalculateQuoteTotals,
 } from "@/hooks/useQuotes";
@@ -30,13 +31,29 @@ export default function QuoteDetailClient({ id }: QuoteDetailClientProps) {
   const customer = useCustomer(job?.customerId ?? "");
 
   const [showRoomForm, setShowRoomForm] = useState(false);
+  const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [deletingRoomId, setDeletingRoomId] = useState<string | null>(null);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
 
-  async function handleRoomSave(roomData: Omit<Room, "id">) {
-    await addRoom({ ...roomData, quoteId: id });
+  async function handleRoomSave(roomData: Omit<Room, "id" | "updatedAt">) {
+    if (editingRoom) {
+      await updateRoom(editingRoom.id, { ...roomData });
+    } else {
+      await addRoom({ ...roomData, quoteId: id });
+    }
     await recalculateQuoteTotals(id);
     setShowRoomForm(false);
+    setEditingRoom(null);
+  }
+
+  function handleEditRoom(room: Room) {
+    setEditingRoom(room);
+    setShowRoomForm(true);
+  }
+
+  function handleCancelForm() {
+    setShowRoomForm(false);
+    setEditingRoom(null);
   }
 
   async function handleDeleteRoom(roomId: string) {
@@ -118,14 +135,17 @@ export default function QuoteDetailClient({ id }: QuoteDetailClientProps) {
         {/* Room actions */}
         {showRoomForm ? (
           <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] px-4 py-4">
-            <h3 className="text-white font-semibold text-[15px] mb-4">New Room</h3>
+            <h3 className="text-white font-semibold text-[15px] mb-4">
+              {editingRoom ? "Edit Room" : "New Room"}
+            </h3>
             {job && (
               <RoomForm
                 serviceType={job.serviceType}
                 laborRate={quote.laborRate}
                 quoteId={id}
                 onSave={handleRoomSave}
-                onCancel={() => setShowRoomForm(false)}
+                onCancel={handleCancelForm}
+                editRoom={editingRoom ?? undefined}
               />
             )}
           </div>
@@ -143,7 +163,7 @@ export default function QuoteDetailClient({ id }: QuoteDetailClientProps) {
           </button>
         )}
 
-        {/* Remove rooms controls */}
+        {/* Manage rooms */}
         {!showRoomForm && rooms.length > 0 && (
           <div className="flex flex-col gap-2">
             <p className="text-white/40 text-[12px] font-semibold uppercase tracking-widest">Manage Rooms</p>
@@ -154,17 +174,31 @@ export default function QuoteDetailClient({ id }: QuoteDetailClientProps) {
                   key={room.id}
                   className="rounded-2xl bg-white/[0.06] border border-white/[0.08] px-4 py-3.5 flex items-center justify-between gap-3"
                 >
-                  <div className="min-w-0">
+                  <button
+                    onClick={() => handleEditRoom(room)}
+                    className="min-w-0 text-left flex-1 active:opacity-60 transition-opacity"
+                  >
                     <p className="text-white text-[14px] font-medium truncate">{room.name}</p>
                     <p className="text-white/40 text-[12px] mt-0.5">
                       {formatServiceType(room.serviceType)}
                       {room.paintColor && ` · ${room.paintColor}`}
                     </p>
-                  </div>
+                  </button>
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <span className="text-white text-[14px] font-semibold">
                       {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(total)}
                     </span>
+                    {/* Edit button */}
+                    <button
+                      onClick={() => handleEditRoom(room)}
+                      className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-500/15 border border-blue-500/20 text-blue-400 active:bg-blue-500/30 transition-colors"
+                      aria-label="Edit room"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M8.5 1.5L10.5 3.5L4 10H2V8L8.5 1.5Z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                    {/* Delete button */}
                     <button
                       onClick={() => handleDeleteRoom(room.id)}
                       disabled={deletingRoomId === room.id}
