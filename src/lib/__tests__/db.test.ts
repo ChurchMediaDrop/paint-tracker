@@ -1,13 +1,14 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import Dexie from "dexie";
 import { db, PaintTrackerDB } from "@/lib/db";
-import { seedDatabase } from "@/lib/seed-data";
+import { seedDatabase, resetSeedFlag } from "@/lib/seed-data";
 import { SurfaceType, MessageChannel } from "@/lib/types";
 
 // Use in-memory database for tests
 beforeEach(async () => {
   await db.delete();
   await db.open();
+  resetSeedFlag();
 });
 
 describe("database schema", () => {

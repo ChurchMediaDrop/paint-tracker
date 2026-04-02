@@ -63,6 +63,10 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 let seeded = false;
 
+export function resetSeedFlag(): void {
+  seeded = false;
+}
+
 export async function seedDatabase(): Promise<void> {
   if (seeded) return;
   seeded = true;

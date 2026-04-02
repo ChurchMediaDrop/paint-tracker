@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { db } from "@/lib/db";
-import { seedDatabase } from "@/lib/seed-data";
+import { seedDatabase, resetSeedFlag } from "@/lib/seed-data";
 import { exportDatabase, importDatabase } from "@/lib/backup";
 
 beforeEach(async () => {
   await db.delete();
   await db.open();
+  resetSeedFlag();
 });
 
 describe("exportDatabase", () => {

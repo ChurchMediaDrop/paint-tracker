@@ -29,10 +29,11 @@ describe("types", () => {
     ]);
   });
 
-  it("RoomType has walls, ceiling, exterior, other", () => {
+  it("RoomType has walls, ceiling, walls_and_ceiling, exterior, other", () => {
     expect(Object.values(RoomType)).toEqual([
       "walls",
       "ceiling",
+      "walls_and_ceiling",
       "exterior",
       "other",
     ]);

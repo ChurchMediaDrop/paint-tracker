@@ -25,6 +25,9 @@ export function calculatePaintableArea(input: AreaInput): number {
     case RoomType.Ceiling:
       rawArea = l * w;
       break;
+    case RoomType.WallsAndCeiling:
+      rawArea = 2 * (l + w) * h + l * w;
+      break;
     case RoomType.Exterior:
       rawArea = l * h;
       break;

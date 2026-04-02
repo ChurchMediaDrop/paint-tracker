@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
-import { seedDatabase } from "@/lib/seed-data";
 import { JobStatus } from "@/lib/types";
 import { formatCurrency } from "@/lib/format";
 import AppShell from "@/components/AppShell";
@@ -101,10 +99,6 @@ const TILES = [
 ];
 
 export default function HomePage() {
-  useEffect(() => {
-    seedDatabase().catch(console.error);
-  }, []);
-
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();

@@ -14,18 +14,13 @@ import { recommendPurchaseSize } from "@/lib/shopping-list";
 import { formatSurfaceType } from "@/lib/format";
 import { RoomType, SurfaceType } from "@/lib/types";
 
-const ROOM_TYPES = [
-  { value: RoomType.Walls, label: "Walls" },
-  { value: RoomType.Ceiling, label: "Ceiling" },
-  { value: RoomType.Exterior, label: "Exterior" },
-];
-
 const SURFACE_TYPES = Object.values(SurfaceType);
 
 export default function CalculatorPage() {
   const presets = usePaintPresets();
 
-  const [roomType, setRoomType] = useState<RoomType>(RoomType.Walls);
+  const [includeWalls, setIncludeWalls] = useState(true);
+  const [includeCeiling, setIncludeCeiling] = useState(false);
   const [length, setLength] = useState("");
   const [width, setWidth] = useState("");
   const [height, setHeight] = useState("");
@@ -33,6 +28,12 @@ export default function CalculatorPage() {
   const [windowCount, setWindowCount] = useState("0");
   const [surfaceType, setSurfaceType] = useState<SurfaceType>(SurfaceType.SmoothDrywall);
   const [coats, setCoats] = useState(2);
+
+  const roomType = useMemo(() => {
+    if (includeWalls && includeCeiling) return RoomType.WallsAndCeiling;
+    if (includeCeiling) return RoomType.Ceiling;
+    return RoomType.Walls;
+  }, [includeWalls, includeCeiling]);
 
   const preset = useMemo(
     () => presets.find((p) => p.surfaceType === surfaceType),
@@ -69,38 +70,48 @@ export default function CalculatorPage() {
   const hasInput =
     (parseFloat(length) > 0 || parseFloat(height) > 0 || parseFloat(width) > 0);
 
-  const showWidth = roomType === RoomType.Walls || roomType === RoomType.Ceiling;
-  const showHeight = roomType === RoomType.Walls || roomType === RoomType.Exterior;
-  const showDoorWindow = roomType === RoomType.Walls || roomType === RoomType.Exterior;
-
   return (
     <AppShell showBack title="Calculator">
       <div className="flex flex-col px-4 pb-28 pt-4 gap-4">
 
-        {/* Room Type Selector */}
-        <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] p-1 flex gap-1">
-          {ROOM_TYPES.map(({ value, label }) => (
+        {/* What to Paint — toggle buttons */}
+        <div>
+          <p className="text-white/50 text-[12px] font-semibold uppercase tracking-widest mb-2">What to Paint</p>
+          <div className="flex gap-2">
             <button
-              key={value}
-              onClick={() => setRoomType(value)}
+              onClick={() => setIncludeWalls((v) => !v)}
               className={[
                 "flex-1 py-2.5 rounded-xl text-[14px] font-semibold transition-all min-h-[44px]",
-                roomType === value
+                includeWalls
                   ? "bg-gradient-to-br from-violet-500 to-purple-700 text-white shadow-lg shadow-purple-900/30"
-                  : "text-white/40 active:text-white/60 active:bg-white/[0.05]",
+                  : "bg-white/[0.08] border border-white/[0.12] text-white/40 active:text-white/60 active:bg-white/[0.05]",
               ].join(" ")}
             >
-              {label}
+              Walls
             </button>
-          ))}
+            <button
+              onClick={() => setIncludeCeiling((v) => !v)}
+              className={[
+                "flex-1 py-2.5 rounded-xl text-[14px] font-semibold transition-all min-h-[44px]",
+                includeCeiling
+                  ? "bg-gradient-to-br from-violet-500 to-purple-700 text-white shadow-lg shadow-purple-900/30"
+                  : "bg-white/[0.08] border border-white/[0.12] text-white/40 active:text-white/60 active:bg-white/[0.05]",
+              ].join(" ")}
+            >
+              Ceiling
+            </button>
+          </div>
+          {!includeWalls && !includeCeiling && (
+            <p className="text-amber-400/70 text-[12px] mt-1.5 text-center">Select at least one</p>
+          )}
         </div>
 
-        {/* Dimensions */}
+        {/* Dimensions — always show all three */}
         <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] px-4 py-4">
           <h2 className="text-white/60 text-[12px] font-semibold uppercase tracking-widest mb-3">
             Dimensions (ft)
           </h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-white/50 text-[12px] font-medium mb-1">Length</label>
               <input
@@ -112,81 +123,75 @@ export default function CalculatorPage() {
                 className="w-full bg-white/[0.08] border border-white/[0.12] rounded-xl px-3 py-2.5 text-white text-[16px] font-medium focus:outline-none focus:border-violet-500/60 placeholder-white/25"
               />
             </div>
-            {showWidth && (
-              <div>
-                <label className="block text-white/50 text-[12px] font-medium mb-1">Width</label>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  value={width}
-                  onChange={(e) => setWidth(e.target.value)}
-                  placeholder="0"
-                  className="w-full bg-white/[0.08] border border-white/[0.12] rounded-xl px-3 py-2.5 text-white text-[16px] font-medium focus:outline-none focus:border-violet-500/60 placeholder-white/25"
-                />
-              </div>
-            )}
-            {showHeight && (
-              <div>
-                <label className="block text-white/50 text-[12px] font-medium mb-1">Height</label>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  value={height}
-                  onChange={(e) => setHeight(e.target.value)}
-                  placeholder="0"
-                  className="w-full bg-white/[0.08] border border-white/[0.12] rounded-xl px-3 py-2.5 text-white text-[16px] font-medium focus:outline-none focus:border-violet-500/60 placeholder-white/25"
-                />
-              </div>
-            )}
+            <div>
+              <label className="block text-white/50 text-[12px] font-medium mb-1">Width</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={width}
+                onChange={(e) => setWidth(e.target.value)}
+                placeholder="0"
+                className="w-full bg-white/[0.08] border border-white/[0.12] rounded-xl px-3 py-2.5 text-white text-[16px] font-medium focus:outline-none focus:border-violet-500/60 placeholder-white/25"
+              />
+            </div>
+            <div>
+              <label className="block text-white/50 text-[12px] font-medium mb-1">Height</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={height}
+                onChange={(e) => setHeight(e.target.value)}
+                placeholder="0"
+                className="w-full bg-white/[0.08] border border-white/[0.12] rounded-xl px-3 py-2.5 text-white text-[16px] font-medium focus:outline-none focus:border-violet-500/60 placeholder-white/25"
+              />
+            </div>
           </div>
         </div>
 
         {/* Doors & Windows */}
-        {showDoorWindow && (
-          <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] px-4 py-4">
-            <h2 className="text-white/60 text-[12px] font-semibold uppercase tracking-widest mb-3">
-              Deductions
-            </h2>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-white/50 text-[12px] font-medium mb-1">Doors</label>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setDoorCount((v) => String(Math.max(0, parseInt(v) - 1)))}
-                    className="w-10 h-10 rounded-xl bg-white/[0.08] border border-white/[0.12] text-white text-lg font-medium active:bg-white/15 transition-colors flex items-center justify-center"
-                  >
-                    −
-                  </button>
-                  <span className="flex-1 text-center text-white text-[17px] font-semibold">{doorCount}</span>
-                  <button
-                    onClick={() => setDoorCount((v) => String(parseInt(v) + 1))}
-                    className="w-10 h-10 rounded-xl bg-white/[0.08] border border-white/[0.12] text-white text-lg font-medium active:bg-white/15 transition-colors flex items-center justify-center"
-                  >
-                    +
-                  </button>
-                </div>
+        <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] px-4 py-4">
+          <h2 className="text-white/60 text-[12px] font-semibold uppercase tracking-widest mb-3">
+            Deductions
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-white/50 text-[12px] font-medium mb-1">Doors</label>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setDoorCount((v) => String(Math.max(0, parseInt(v) - 1)))}
+                  className="w-10 h-10 rounded-xl bg-white/[0.08] border border-white/[0.12] text-white text-lg font-medium active:bg-white/15 transition-colors flex items-center justify-center"
+                >
+                  −
+                </button>
+                <span className="flex-1 text-center text-white text-[17px] font-semibold">{doorCount}</span>
+                <button
+                  onClick={() => setDoorCount((v) => String(parseInt(v) + 1))}
+                  className="w-10 h-10 rounded-xl bg-white/[0.08] border border-white/[0.12] text-white text-lg font-medium active:bg-white/15 transition-colors flex items-center justify-center"
+                >
+                  +
+                </button>
               </div>
-              <div>
-                <label className="block text-white/50 text-[12px] font-medium mb-1">Windows</label>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setWindowCount((v) => String(Math.max(0, parseInt(v) - 1)))}
-                    className="w-10 h-10 rounded-xl bg-white/[0.08] border border-white/[0.12] text-white text-lg font-medium active:bg-white/15 transition-colors flex items-center justify-center"
-                  >
-                    −
-                  </button>
-                  <span className="flex-1 text-center text-white text-[17px] font-semibold">{windowCount}</span>
-                  <button
-                    onClick={() => setWindowCount((v) => String(parseInt(v) + 1))}
-                    className="w-10 h-10 rounded-xl bg-white/[0.08] border border-white/[0.12] text-white text-lg font-medium active:bg-white/15 transition-colors flex items-center justify-center"
-                  >
-                    +
-                  </button>
-                </div>
+            </div>
+            <div>
+              <label className="block text-white/50 text-[12px] font-medium mb-1">Windows</label>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setWindowCount((v) => String(Math.max(0, parseInt(v) - 1)))}
+                  className="w-10 h-10 rounded-xl bg-white/[0.08] border border-white/[0.12] text-white text-lg font-medium active:bg-white/15 transition-colors flex items-center justify-center"
+                >
+                  −
+                </button>
+                <span className="flex-1 text-center text-white text-[17px] font-semibold">{windowCount}</span>
+                <button
+                  onClick={() => setWindowCount((v) => String(parseInt(v) + 1))}
+                  className="w-10 h-10 rounded-xl bg-white/[0.08] border border-white/[0.12] text-white text-lg font-medium active:bg-white/15 transition-colors flex items-center justify-center"
+                >
+                  +
+                </button>
               </div>
             </div>
           </div>
-        )}
+        </div>
 
         {/* Surface Type */}
         <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] px-4 py-4">
