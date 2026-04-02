@@ -26,6 +26,7 @@ interface RoomFormProps {
   onSave: (room: Omit<Room, "id" | "updatedAt">) => void;
   onCancel: () => void;
   editRoom?: Room;
+  previousRoom?: Room; // Most recently added room in the same quote
 }
 
 const PAINT_SERVICES = [ServiceType.InteriorPaint, ServiceType.ExteriorPaint];
@@ -81,12 +82,16 @@ export default function RoomForm({
   onSave,
   onCancel,
   editRoom,
+  previousRoom,
 }: RoomFormProps) {
   const isPaint = PAINT_SERVICES.includes(serviceType);
   const isExterior = serviceType === ServiceType.ExteriorPaint;
   const paintPresets = usePaintPresets();
 
-  const initialChecks = editRoom ? deriveChecks(editRoom.roomType) : { walls: true, ceiling: false };
+  // When adding a new room, pre-fill paint details from previousRoom if available
+  const prev = editRoom ?? previousRoom;
+
+  const initialChecks = prev ? deriveChecks(prev.roomType) : { walls: true, ceiling: false };
 
   // Paint mode state
   const [name, setName] = useState(editRoom?.name ?? "");
@@ -97,28 +102,28 @@ export default function RoomForm({
   const [height, setHeight] = useState(editRoom?.height?.toString() ?? "");
   const [doorCount, setDoorCount] = useState(editRoom?.doorCount?.toString() ?? "0");
   const [windowCount, setWindowCount] = useState(editRoom?.windowCount?.toString() ?? "0");
-  const [surfaceType, setSurfaceType] = useState<SurfaceType>(editRoom?.surfaceType ?? SurfaceType.SmoothDrywall);
-  const [paintColor, setPaintColor] = useState(editRoom?.paintColor ?? "");
-  const [paintBrand, setPaintBrand] = useState(editRoom?.paintBrand ?? "");
-  const [finishType, setFinishType] = useState<FinishType>(editRoom?.finishType ?? FinishType.Eggshell);
-  const [coats, setCoats] = useState(editRoom?.coats?.toString() ?? "2");
-  const [pricePerGallon, setPricePerGallon] = useState(editRoom?.pricePerGallon?.toString() ?? "45");
+  const [surfaceType, setSurfaceType] = useState<SurfaceType>(prev?.surfaceType ?? SurfaceType.SmoothDrywall);
+  const [paintColor, setPaintColor] = useState(prev?.paintColor ?? "");
+  const [paintBrand, setPaintBrand] = useState(prev?.paintBrand ?? "");
+  const [finishType, setFinishType] = useState<FinishType>(prev?.finishType ?? FinishType.Eggshell);
+  const [coats, setCoats] = useState(prev?.coats?.toString() ?? "2");
+  const [pricePerGallon, setPricePerGallon] = useState(prev?.pricePerGallon?.toString() ?? "45");
 
   // Trim/door toggle state
-  const [includeTrim, setIncludeTrim] = useState(editRoom?.includeTrim ?? false);
-  const [includeDoors, setIncludeDoors] = useState(editRoom?.includeDoors ?? false);
+  const [includeTrim, setIncludeTrim] = useState(prev?.includeTrim ?? false);
+  const [includeDoors, setIncludeDoors] = useState(prev?.includeDoors ?? false);
 
   // Ceiling paint state
-  const [ceilingColor, setCeilingColor] = useState(editRoom?.ceilingColor ?? "White");
-  const [ceilingBrand, setCeilingBrand] = useState(editRoom?.ceilingBrand ?? "");
-  const [ceilingFinish, setCeilingFinish] = useState<FinishType>(editRoom?.ceilingFinish ?? FinishType.Flat);
-  const [ceilingPricePerGallon, setCeilingPricePerGallon] = useState(editRoom?.ceilingPricePerGallon?.toString() ?? "45");
+  const [ceilingColor, setCeilingColor] = useState(prev?.ceilingColor ?? "White");
+  const [ceilingBrand, setCeilingBrand] = useState(prev?.ceilingBrand ?? "");
+  const [ceilingFinish, setCeilingFinish] = useState<FinishType>(prev?.ceilingFinish ?? FinishType.Flat);
+  const [ceilingPricePerGallon, setCeilingPricePerGallon] = useState(prev?.ceilingPricePerGallon?.toString() ?? "45");
 
   // Trim/door paint state
-  const [trimColor, setTrimColor] = useState(editRoom?.trimColor ?? "");
-  const [trimBrand, setTrimBrand] = useState(editRoom?.trimBrand ?? "");
-  const [trimFinish, setTrimFinish] = useState<FinishType>(editRoom?.trimFinish ?? FinishType.SemiGloss);
-  const [trimPricePerGallon, setTrimPricePerGallon] = useState(editRoom?.trimPricePerGallon?.toString() ?? "50");
+  const [trimColor, setTrimColor] = useState(prev?.trimColor ?? "");
+  const [trimBrand, setTrimBrand] = useState(prev?.trimBrand ?? "");
+  const [trimFinish, setTrimFinish] = useState<FinishType>(prev?.trimFinish ?? FinishType.SemiGloss);
+  const [trimPricePerGallon, setTrimPricePerGallon] = useState(prev?.trimPricePerGallon?.toString() ?? "50");
 
   // Non-paint mode state
   const [description, setDescription] = useState(editRoom?.description ?? "");

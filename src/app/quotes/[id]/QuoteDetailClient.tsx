@@ -146,6 +146,7 @@ export default function QuoteDetailClient({ id }: QuoteDetailClientProps) {
                 onSave={handleRoomSave}
                 onCancel={handleCancelForm}
                 editRoom={editingRoom ?? undefined}
+                previousRoom={!editingRoom && rooms.length > 0 ? rooms[rooms.length - 1] : undefined}
               />
             )}
           </div>
