@@ -176,7 +176,7 @@ export default function SchedulePage() {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <AppShell title="Schedule">
+    <AppShell showBack title="Schedule">
       <div className="flex flex-col flex-1">
 
         {/* Controls bar */}
