@@ -175,13 +175,8 @@ export default function HomePage() {
             aria-label="Settings"
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <circle cx="10" cy="10" r="2.5" stroke="white" strokeWidth="1.6" fill="none"/>
-              <path
-                d="M10 2.5V4M10 16V17.5M2.5 10H4M16 10H17.5M4.4 4.4L5.5 5.5M14.5 14.5L15.6 15.6M15.6 4.4L14.5 5.5M5.5 14.5L4.4 15.6"
-                stroke="white"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-              />
+              <path d="M8.325 2.317a1.5 1.5 0 0 1 3.35 0l.143.953a1.1 1.1 0 0 0 1.544.834l.868-.422a1.5 1.5 0 0 1 1.675 2.438l-.725.531a1.1 1.1 0 0 0 0 1.698l.725.531a1.5 1.5 0 0 1-1.675 2.438l-.868-.422a1.1 1.1 0 0 0-1.544.834l-.143.953a1.5 1.5 0 0 1-3.35 0l-.143-.953a1.1 1.1 0 0 0-1.544-.834l-.868.422a1.5 1.5 0 0 1-1.675-2.438l.725-.531a1.1 1.1 0 0 0 0-1.698l-.725-.531A1.5 1.5 0 0 1 5.77 3.682l.868.422a1.1 1.1 0 0 0 1.544-.834l.143-.953Z" stroke="white" strokeWidth="1.4" fill="none"/>
+              <circle cx="10" cy="10" r="2.5" stroke="white" strokeWidth="1.4" fill="none"/>
             </svg>
           </Link>
         </div>

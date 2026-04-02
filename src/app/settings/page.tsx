@@ -647,6 +647,9 @@ export default function SettingsPage() {
     <AppShell showBack title="Settings">
       <div className="flex flex-col px-4 pb-28 pt-4 gap-3">
 
+        {/* ── Cloud Sync ── */}
+        <CloudSyncSection />
+
         {/* ── Defaults ── */}
         <SectionHeader title="Defaults" />
         <DefaultsSection />
@@ -701,9 +704,6 @@ export default function SettingsPage() {
           </button>
         </div>
         <p className="text-white/30 text-[12px] text-center -mt-1">Google Calendar integration coming soon</p>
-
-        {/* ── Cloud Sync ── */}
-        <CloudSyncSection />
 
         {/* ── Backup & Restore ── */}
         <SectionHeader title="Backup & Restore" />
