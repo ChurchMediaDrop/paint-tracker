@@ -1,9 +1,9 @@
 import { RoomType } from "@/lib/types";
 
-const DOOR_SQ_FT = 20;
-const WINDOW_SQ_FT = 15;
-const WASTE_FACTOR = 1.10;
-const PREP_TIME_FACTOR = 1.15;
+export const DOOR_SQ_FT = 20;
+export const WINDOW_SQ_FT = 15;
+export const WASTE_FACTOR = 1.10;
+export const PREP_TIME_FACTOR = 1.15;
 
 interface AreaInput {
   roomType: RoomType;
