@@ -251,7 +251,7 @@ export default function JobDetailClient({ id }: JobDetailClientProps) {
             <h2 className="text-white/60 text-[12px] font-semibold uppercase tracking-widest">
               Scheduled
             </h2>
-            {!editingDate && (
+            {!editingDate && job.scheduledDate && (
               <button
                 onClick={startEditDate}
                 className="text-emerald-400 text-[14px] font-medium active:opacity-60 transition-opacity py-1 px-2 -mr-2 min-h-[44px] flex items-center"
@@ -284,12 +284,22 @@ export default function JobDetailClient({ id }: JobDetailClientProps) {
                 </button>
               </div>
             </div>
-          ) : (
+          ) : job.scheduledDate ? (
             <p className="text-white text-[15px] mt-1">
-              {job.scheduledDate ? formatDateTime(job.scheduledDate) : (
-                <span className="text-white/30">Not scheduled</span>
-              )}
+              {formatDateTime(job.scheduledDate)}
             </p>
+          ) : (
+            <button
+              onClick={startEditDate}
+              className="w-full mt-2 flex items-center justify-center gap-2 py-4 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-700 text-white font-semibold text-[15px] active:scale-[0.98] transition-transform shadow-lg shadow-violet-900/30"
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect x="2" y="3" width="14" height="13" rx="2" stroke="white" strokeWidth="1.6" fill="none"/>
+                <path d="M6 1.5V4.5M12 1.5V4.5" stroke="white" strokeWidth="1.6" strokeLinecap="round"/>
+                <path d="M2 7.5H16" stroke="white" strokeWidth="1.6"/>
+              </svg>
+              Schedule Job
+            </button>
           )}
         </div>
 
