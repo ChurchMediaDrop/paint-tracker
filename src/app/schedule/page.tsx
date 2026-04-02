@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import AppShell from "@/components/AppShell";
 import StatusBadge from "@/components/StatusBadge";
+import ScheduleSheet from "@/components/ScheduleSheet";
 import { useJobsByDateRange } from "@/hooks/useJobs";
 import { db } from "@/lib/db";
 import { formatServiceType } from "@/lib/format";
@@ -134,6 +135,7 @@ export default function SchedulePage() {
   const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>("day");
   const [selectedDate, setSelectedDate] = useState<Date>(() => startOfDay(new Date()));
+  const [showScheduleSheet, setShowScheduleSheet] = useState(false);
 
   // Day view date range
   const dayStart = startOfDay(selectedDate).toISOString();
@@ -366,6 +368,22 @@ export default function SchedulePage() {
           )}
         </div>
       </div>
+      {/* Floating Action Button */}
+      <button
+        onClick={() => setShowScheduleSheet(true)}
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-br from-orange-500 to-rose-600 text-white shadow-xl shadow-orange-900/40 flex items-center justify-center active:scale-95 transition-transform z-40"
+        aria-label="Schedule a job"
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M12 5V19M5 12H19" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+        </svg>
+      </button>
+
+      <ScheduleSheet
+        open={showScheduleSheet}
+        onClose={() => setShowScheduleSheet(false)}
+        prefilledDate={selectedDate.toISOString().slice(0, 10)}
+      />
     </AppShell>
   );
 }
