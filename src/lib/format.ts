@@ -1,4 +1,4 @@
-import { ServiceType, JobStatus, FinishType, SurfaceType } from "@/lib/types";
+import { ServiceType, JobStatus, FinishType, SurfaceType, StainType, WoodCondition } from "@/lib/types";
 
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
@@ -19,6 +19,7 @@ const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
   [ServiceType.ExteriorPaint]: "Exterior Paint",
   [ServiceType.PowerWashing]: "Power Washing",
   [ServiceType.Handyman]: "Handyman",
+  [ServiceType.DeckStaining]: "Deck Staining",
 };
 export function formatServiceType(type: ServiceType): string { return SERVICE_TYPE_LABELS[type] ?? type; }
 
@@ -53,3 +54,16 @@ const SURFACE_TYPE_LABELS: Record<SurfaceType, string> = {
   [SurfaceType.WoodDeck]: "Wood/Deck",
 };
 export function formatSurfaceType(type: SurfaceType): string { return SURFACE_TYPE_LABELS[type] ?? type; }
+
+const STAIN_TYPE_LABELS: Record<StainType, string> = {
+  [StainType.Transparent]: "Transparent",
+  [StainType.SemiTransparent]: "Semi-Transparent",
+  [StainType.SolidPaint]: "Solid / Paint",
+};
+export function formatStainType(type: StainType): string { return STAIN_TYPE_LABELS[type] ?? type; }
+
+const WOOD_CONDITION_LABELS: Record<WoodCondition, string> = {
+  [WoodCondition.Smooth]: "New / Smooth",
+  [WoodCondition.Rough]: "Weathered / Rough",
+};
+export function formatWoodCondition(condition: WoodCondition): string { return WOOD_CONDITION_LABELS[condition] ?? condition; }
