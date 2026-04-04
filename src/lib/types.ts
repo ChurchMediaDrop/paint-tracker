@@ -3,6 +3,7 @@ export enum ServiceType {
   ExteriorPaint = "exterior_paint",
   PowerWashing = "power_washing",
   Handyman = "handyman",
+  DeckStaining = "deck_staining",
 }
 
 export enum JobStatus {
@@ -60,6 +61,17 @@ export enum CalendarOperation {
   Create = "create",
   Update = "update",
   Delete = "delete",
+}
+
+export enum StainType {
+  Transparent = "transparent",
+  SemiTransparent = "semi_transparent",
+  SolidPaint = "solid_paint",
+}
+
+export enum WoodCondition {
+  Smooth = "smooth",
+  Rough = "rough",
 }
 
 export interface Customer {
@@ -129,6 +141,11 @@ export interface Room {
   trimBrand: string;
   trimFinish: FinishType | null;
   trimPricePerGallon: number | null;
+  // Deck fields
+  railingLinearFeet: number;
+  stairCount: number;
+  stainType: StainType | null;
+  woodCondition: WoodCondition | null;
   paintableSqFt: number;
   gallonsNeeded: number;
   ceilingGallonsNeeded: number;
