@@ -23,6 +23,17 @@ interface PaintEntry {
 function extractPaintEntries(room: Room): PaintEntry[] {
   const entries: PaintEntry[] = [];
 
+  // Deck stain/paint
+  if (room.serviceType === ServiceType.DeckStaining && room.paintColor && room.gallonsNeeded > 0) {
+    entries.push({
+      paintColor: room.paintColor,
+      paintBrand: room.paintBrand,
+      finishType: room.finishType ?? FinishType.Satin,
+      rawGallons: room.gallonsNeeded,
+      pricePerGallon: room.pricePerGallon ?? 0,
+    });
+  }
+
   // Wall paint
   if (room.paintColor && room.finishType && room.gallonsNeeded > 0) {
     entries.push({
@@ -67,7 +78,10 @@ function extractPaintEntries(room: Room): PaintEntry[] {
 
 export function aggregateShoppingList(rooms: Room[]): ShoppingListItem[] {
   const paintRooms = rooms.filter(
-    (r) => r.serviceType === ServiceType.InteriorPaint || r.serviceType === ServiceType.ExteriorPaint
+    (r) =>
+      r.serviceType === ServiceType.InteriorPaint ||
+      r.serviceType === ServiceType.ExteriorPaint ||
+      r.serviceType === ServiceType.DeckStaining
   );
 
   const groups = new Map<string, PaintEntry[]>();

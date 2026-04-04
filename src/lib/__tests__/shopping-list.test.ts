@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { aggregateShoppingList, recommendPurchaseSize } from "@/lib/shopping-list";
-import { ServiceType, RoomType, SurfaceType, FinishType, type Room } from "@/lib/types";
+import { ServiceType, RoomType, SurfaceType, FinishType, StainType, type Room } from "@/lib/types";
 
 function makeRoom(overrides: Partial<Room>): Room {
   return {
@@ -171,6 +171,25 @@ describe("aggregateShoppingList", () => {
     expect(list).toHaveLength(2);
     const ceilingItem = list.find((i) => i.paintColor === "Ceiling White");
     expect(ceilingItem!.totalGallons).toBeCloseTo(1.75);
+  });
+
+  it("includes deck staining rooms in shopping list", () => {
+    const rooms: Room[] = [
+      {
+        ...makeRoom({}),
+        serviceType: ServiceType.DeckStaining,
+        paintColor: "Cedar",
+        paintBrand: "Cabot",
+        finishType: null,
+        gallonsNeeded: 3.5,
+        pricePerGallon: 40,
+        stainType: StainType.SemiTransparent,
+      },
+    ];
+    const result = aggregateShoppingList(rooms);
+    expect(result.length).toBe(1);
+    expect(result[0].paintColor).toBe("Cedar");
+    expect(result[0].totalGallons).toBe(3.5);
   });
 
   it("produces all three entries for a room with walls, ceiling, and trim", () => {
