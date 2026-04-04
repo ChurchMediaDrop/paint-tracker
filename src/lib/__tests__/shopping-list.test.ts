@@ -16,6 +16,7 @@ function makeRoom(overrides: Partial<Room>): Room {
     ceilingGallonsNeeded: 0,
     trimColor: "", trimBrand: "", trimFinish: null, trimPricePerGallon: null,
     trimGallonsNeeded: 0,
+    railingLinearFeet: 0, stairCount: 0, stainType: null, woodCondition: null,
     updatedAt: new Date().toISOString(),
     ...overrides,
   };

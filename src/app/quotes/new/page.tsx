@@ -56,6 +56,7 @@ const SERVICE_TYPES: ServiceType[] = [
   ServiceType.ExteriorPaint,
   ServiceType.PowerWashing,
   ServiceType.Handyman,
+  ServiceType.DeckStaining,
 ];
 
 const SERVICE_TYPE_ICONS: Record<ServiceType, React.ReactNode> = {
@@ -79,6 +80,14 @@ const SERVICE_TYPE_ICONS: Record<ServiceType, React.ReactNode> = {
   [ServiceType.Handyman]: (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76Z" stroke="currentColor" strokeWidth="1.8" fill="none"/>
+    </svg>
+  ),
+  [ServiceType.DeckStaining]: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="14" width="20" height="3" rx="1" stroke="currentColor" strokeWidth="1.8" fill="none"/>
+      <path d="M6 14V9M10 14V9M14 14V9M18 14V9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+      <path d="M4 9h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+      <path d="M8 20v2M16 20v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
     </svg>
   ),
 };
