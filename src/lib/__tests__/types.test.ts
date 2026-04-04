@@ -9,12 +9,13 @@ import {
 } from "@/lib/types";
 
 describe("types", () => {
-  it("ServiceType has all four service types", () => {
+  it("ServiceType has all five service types", () => {
     expect(Object.values(ServiceType)).toEqual([
       "interior_paint",
       "exterior_paint",
       "power_washing",
       "handyman",
+      "deck_staining",
     ]);
   });
 
