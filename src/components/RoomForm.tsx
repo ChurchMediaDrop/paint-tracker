@@ -8,6 +8,7 @@ import {
   FinishType,
   type Room,
 } from "@/lib/types";
+import DeckForm from "@/components/DeckForm";
 import {
   calculatePaintableArea,
   calculateGallonsNeeded,
@@ -87,6 +88,19 @@ export default function RoomForm({
   editRoom,
   previousRoom,
 }: RoomFormProps) {
+  if (serviceType === ServiceType.DeckStaining) {
+    return (
+      <DeckForm
+        laborRate={laborRate}
+        quoteId={quoteId}
+        onSave={onSave}
+        onCancel={onCancel}
+        editRoom={editRoom}
+        previousRoom={previousRoom}
+      />
+    );
+  }
+
   const isPaint = PAINT_SERVICES.includes(serviceType);
   const isExterior = serviceType === ServiceType.ExteriorPaint;
   const paintPresets = usePaintPresets();
