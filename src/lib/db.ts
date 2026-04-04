@@ -91,6 +91,24 @@ export class PaintTrackerDB extends Dexie {
         if (record.trimGallonsNeeded === undefined) record.trimGallonsNeeded = 0;
       });
     });
+    this.version(4).stores({
+      customers: "id, name, updatedAt",
+      jobs: "id, customerId, status, scheduledDate, updatedAt",
+      quotes: "id, jobId, updatedAt",
+      rooms: "id, quoteId, sortOrder, updatedAt",
+      actuals: "id, jobId, updatedAt",
+      messageTemplates: "id, isDefault, updatedAt",
+      paintPresets: "id, surfaceType, isDefault, updatedAt",
+      calendarSyncQueue: "id, createdAt",
+      appSettings: "id",
+    }).upgrade(tx => {
+      return tx.table("rooms").toCollection().modify(record => {
+        if (record.railingLinearFeet === undefined) record.railingLinearFeet = 0;
+        if (record.stairCount === undefined) record.stairCount = 0;
+        if (record.stainType === undefined) record.stainType = null;
+        if (record.woodCondition === undefined) record.woodCondition = null;
+      });
+    });
   }
 }
 
