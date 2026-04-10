@@ -245,7 +245,7 @@ export default function HomePage() {
         </div>
 
         {/* Pipeline Cards */}
-        <div className="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4 mb-4">
+        <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 mb-4">
           {[
             {
               label: "Leads",

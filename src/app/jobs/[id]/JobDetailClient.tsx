@@ -208,7 +208,7 @@ export default function JobDetailClient({ id }: JobDetailClientProps) {
           <h2 className="text-white/60 text-[12px] font-semibold uppercase tracking-widest mb-3">
             Status
           </h2>
-          <div className="flex items-center gap-1 overflow-x-auto pb-1 -mx-1 px-1">
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
             {JOB_STATUS_ORDER.map((s, idx) => {
               const currentIdx = JOB_STATUS_ORDER.indexOf(job.status);
               const isPast = idx < currentIdx;
